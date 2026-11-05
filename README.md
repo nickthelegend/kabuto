@@ -163,6 +163,12 @@ More rows (bot-first race, paymaster, P256, every hash from the e2e suite) are i
 
 ---
 
+## Were you sandwiched? Check any mainnet swap (live today)
+
+The landing page has a checker that runs on **real Ethereum mainnet**, in your browser: paste a Uniswap v4 swap's transaction hash and Kabuto reads that block's PoolManager `Swap` logs from public RPCs, applies the same front/victim/back rules as the replay below, and says whether you were sandwiched, by whom, how far the bot moved the price first, and whether a ±0.5% Kabuto pin would have made your swap invalid. Source: [packages/app/src/lib/mainnet.ts](packages/app/src/lib/mainnet.ts). It reproduces the replay's results exactly (same front-run, back-run and price move for the example victims).
+
+![The mainnet checker on a real sandwiched swap](docs/img/mainnet-checker.png)
+
 ## How big the problem is: a mainnet replay
 
 `packages/replay` scans Uniswap v4 PoolManager `Swap` logs on **Ethereum mainnet** (read-only), blocks 26,299,825–26,307,824 (27 hours), for front/victim/back triples whose front and back legs share a sender.

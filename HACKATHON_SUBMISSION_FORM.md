@@ -17,6 +17,8 @@ Kabuto is a DEX, an SDK and an open filler network built on EIP-8141 frame trans
 
 **The swap can pay its own gas.** A staked paymaster inspects the frames and sponsors a price-pinned swap that repays it from the output in the same atomic batch: the account's ETH moved by exactly 0.
 
+**Works on mainnet today: "Were you sandwiched?"** Paste any Ethereum mainnet Uniswap v4 swap on the landing page; Kabuto reads that block from public RPCs, detects a sandwich with the same rules as our replay, and shows how far the bot moved the price and whether a ±0.5% Kabuto pin would have made the swap invalid.
+
 **Intent board on Arkiv.** The relay mirrors each verified intent to Arkiv (Rabdi) as an entity that expires at the intent's deadline, and records fill outcomes (a landed fill only after the devnet confirms it); the app's Intents tab reads the board from Arkiv, and fillers can too. Live on Rabdi with a real intent and fill. Settlement stays on chain 1337.
 
 Every claim in the README is tied to the contract line that enforces it, the test that covers it and the devnet transaction that proves it.
