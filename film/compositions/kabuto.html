@@ -1,0 +1,29 @@
+<template>
+  <style>
+    @font-face { font-family: "Urbanist"; src: url("assets/fonts/Urbanist.ttf"); font-weight: 100 900; }
+    #root { position: absolute; inset: 0; background: #06070c; overflow: hidden; }
+    .kabuto-frame { position: absolute; left: 96px; top: 54px; width: 1728px; height: 1080px; }
+    .kabuto-frame video { position: absolute; left: 0; top: 0; width: 1728px; height: 1080px; object-fit: contain; }
+    .kabuto-cap { position: absolute; left: 96px; right: 96px; bottom: 54px; padding: 22px 32px; border-radius: 22px; background: rgba(11,12,19,.86); border: 1px solid rgba(239,234,223,.14); font: 600 38px/1.25 "Urbanist"; color: #efeadf; }
+    .kabuto-cap b { color: #ffe9b0; } .kabuto-cap i { font-style: normal; color: #ff9a8b; }
+    .kabuto-tag { position: absolute; left: 96px; top: 60px; padding: 12px 20px; border-radius: 999px; background: rgba(11,12,19,.86); border: 1px solid rgba(239,234,223,.18); font: 600 24px/1 "Urbanist"; letter-spacing: .14em; text-transform: uppercase; color: #b9b4cc; }
+  </style>
+  <div id="root" data-composition-id="kabuto" data-width="1920" data-height="1080">
+    <div class="kabuto-frame" id="kabuto-cam">
+      <video id="kabuto-v1" class="clip" data-start="0" data-duration="11" data-media-start="60" data-playback-rate="4" src="assets/footage/take-full2.mp4" muted playsinline></video>
+      <video id="kabuto-v2" class="clip" data-start="11" data-duration="9" data-media-start="104" src="assets/footage/take-full2.mp4" muted playsinline></video>
+    </div>
+    <div class="kabuto-tag" id="kabuto-tag">Same swap · Kabuto · price pinned ±0.5% in the VERIFY frame</div>
+    <div class="kabuto-cap" id="kabuto-cap1">The bot sees it in the mempool and buys first again. <b>(4× speed while it waits for a block)</b></div>
+    <div class="kabuto-cap" id="kabuto-cap2">The price left the band, so the swap stopped existing: <b>never included · 0 gas.</b></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#kabuto-tag", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 0.2);
+    tl.fromTo("#kabuto-cap1", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5 }, 0.6);
+    tl.to("#kabuto-cap1", { opacity: 0, duration: 0.4 }, 10.6);
+    tl.fromTo("#kabuto-cap2", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5 }, 13.0);
+    tl.fromTo("#kabuto-cam", { scale: 1, x: 0, y: 0 }, { scale: 1.4, x: -300, y: 170, duration: 1.2, ease: "power3.inOut" }, 12.0);
+    window.__timelines["kabuto"] = tl;
+  </script>
+</template>

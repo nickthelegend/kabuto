@@ -1,0 +1,26 @@
+<template>
+  <style>
+    @font-face { font-family: "Urbanist"; src: url("assets/fonts/Urbanist.ttf"); font-weight: 100 900; }
+    #root { position: absolute; inset: 0; background: #06070c; overflow: hidden; }
+    .intent-frame { position: absolute; left: 96px; top: 54px; width: 1728px; height: 1080px; }
+    .intent-frame video { position: absolute; left: 0; top: 0; width: 1728px; height: 1080px; object-fit: contain; }
+    .intent-cap { position: absolute; left: 96px; right: 96px; bottom: 54px; padding: 22px 32px; border-radius: 22px; background: rgba(11,12,19,.86); border: 1px solid rgba(239,234,223,.14); font: 600 38px/1.25 "Urbanist"; color: #efeadf; }
+    .intent-cap b { color: #ffe9b0; } .intent-cap i { font-style: normal; color: #ff9a8b; }
+    .intent-tag { position: absolute; left: 96px; top: 60px; padding: 12px 20px; border-radius: 999px; background: rgba(11,12,19,.86); border: 1px solid rgba(239,234,223,.18); font: 600 24px/1 "Urbanist"; letter-spacing: .14em; text-transform: uppercase; color: #b9b4cc; }
+  </style>
+  <div id="root" data-composition-id="intent" data-width="1920" data-height="1080">
+    <div class="intent-frame" id="intent-cam"><video id="intent-v" class="clip" data-start="0" data-duration="20" data-media-start="106" data-playback-rate="2" src="assets/footage/take-full2.mp4" muted playsinline></video></div>
+    <div class="intent-tag" id="intent-tag">Open intent · 2× speed</div>
+    <div class="intent-cap" id="intent-cap1">Sign one digest: up to 300 kUSD in, at least a decaying minimum out. <b>No transaction, no gas.</b></div>
+    <div class="intent-cap" id="intent-cap2">A filler completes it through Uniswap v4 and pays the gas. <b>Filled.</b></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#intent-tag", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 0.2);
+    tl.fromTo("#intent-cap1", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5 }, 0.6);
+    tl.to("#intent-cap1", { opacity: 0, duration: 0.4 }, 10.0);
+    tl.fromTo("#intent-cap2", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5 }, 10.4);
+    tl.fromTo("#intent-cam", { scale: 1, x: 0, y: 0 }, { scale: 1.35, x: -260, y: 150, duration: 1.2, ease: "power3.inOut" }, 13.0);
+    window.__timelines["intent"] = tl;
+  </script>
+</template>

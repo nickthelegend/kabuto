@@ -1,0 +1,26 @@
+<template>
+  <style>
+    @font-face { font-family: "Urbanist"; src: url("assets/fonts/Urbanist.ttf"); font-weight: 100 900; }
+    #root { position: absolute; inset: 0; background: #06070c; overflow: hidden; }
+    .normal-frame { position: absolute; left: 96px; top: 54px; width: 1728px; height: 1080px; }
+    .normal-frame video { position: absolute; left: 0; top: 0; width: 1728px; height: 1080px; object-fit: contain; }
+    .normal-cap { position: absolute; left: 96px; right: 96px; bottom: 54px; padding: 22px 32px; border-radius: 22px; background: rgba(11,12,19,.86); border: 1px solid rgba(239,234,223,.14); font: 600 38px/1.25 "Urbanist"; color: #efeadf; }
+    .normal-cap b { color: #ffe9b0; } .normal-cap i { font-style: normal; color: #ff9a8b; }
+    .normal-tag { position: absolute; left: 96px; top: 60px; padding: 12px 20px; border-radius: 999px; background: rgba(11,12,19,.86); border: 1px solid rgba(239,234,223,.18); font: 600 24px/1 "Urbanist"; letter-spacing: .14em; text-transform: uppercase; color: #b9b4cc; }
+  </style>
+  <div id="root" data-composition-id="normal" data-width="1920" data-height="1080">
+    <div class="normal-frame" id="normal-cam"><video id="normal-v" class="clip" data-start="0" data-duration="16" data-media-start="48" src="assets/footage/take-full.mp4" muted playsinline></video></div>
+    <div class="normal-tag" id="normal-tag">Live · EF EIP-8141 devnet · real sandwich bot</div>
+    <div class="normal-cap" id="normal-cap1" >An ordinary wallet sends a 1,500 kUSD swap to Uniswap v4 with 2% slippage.</div>
+    <div class="normal-cap" id="normal-cap2">The bot buys first. The swap fills <i>1.80% worse</i> than its quote.</div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#normal-tag", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 0.2);
+    tl.fromTo("#normal-cap1", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5 }, 0.6);
+    tl.to("#normal-cap1", { opacity: 0, duration: 0.4 }, 8.6);
+    tl.fromTo("#normal-cap2", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5 }, 9.0);
+    tl.fromTo("#normal-cam", { scale: 1, x: 0, y: 0 }, { scale: 1.35, x: -260, y: 120, duration: 1.2, ease: "power3.inOut" }, 11.5);
+    window.__timelines["normal"] = tl;
+  </script>
+</template>

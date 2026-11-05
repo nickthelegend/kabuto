@@ -1,0 +1,32 @@
+<template>
+  <style>
+    @font-face { font-family: "Urbanist"; src: url("assets/fonts/Urbanist.ttf"); font-weight: 100 900; }
+    #root { position: absolute; inset: 0; background: #06070c; }
+    #stat-eyebrow { position: absolute; left: 160px; top: 230px; font: 600 26px/1 "Urbanist"; letter-spacing: .2em; text-transform: uppercase; color: #b9b4cc; }
+    .stat-col { position: absolute; top: 320px; width: 760px; }
+    #stat-a { left: 160px; } #stat-b { left: 1000px; }
+    .stat-num { font: 700 220px/1 "Urbanist"; letter-spacing: -0.05em; color: #efeadf; }
+    #stat-b .stat-num { color: #ffe9b0; }
+    .stat-txt { margin-top: 26px; font: 500 40px/1.3 "Urbanist"; color: #b9b4cc; }
+    #stat-src { position: absolute; left: 160px; bottom: 120px; font: 400 22px/1.4 "Space Mono"; color: #6c6a78; }
+  </style>
+  <div id="root" data-composition-id="stat" data-width="1920" data-height="1080">
+    <div id="stat-wrap" class="clip" data-start="0" data-duration="11">
+      <div id="stat-eyebrow">Uniswap v4 on Ethereum mainnet, 27 hours</div>
+      <div id="stat-a" class="stat-col"><div class="stat-num" id="stat-n1">497</div><div class="stat-txt">swaps sandwiched by the same sender</div></div>
+      <div id="stat-b" class="stat-col"><div class="stat-num" id="stat-n2">77%</div><div class="stat-txt">would have been impossible with a ±0.5% Kabuto pin</div></div>
+      <div id="stat-src">Blocks 26,299,825–26,307,824 · read-only scan of PoolManager Swap logs · method: packages/replay/METHOD.md</div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#stat-eyebrow", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 0.2);
+    tl.fromTo("#stat-a", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.8, ease: "power4.out" }, 0.5);
+    const n1 = { v: 0 }; tl.to(n1, { v: 497, duration: 1.6, ease: "power2.out", onUpdate: () => { document.querySelector("#stat-n1").textContent = Math.round(n1.v); } }, 0.5);
+    tl.fromTo("#stat-b", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.8, ease: "power4.out" }, 5.2);
+    const n2 = { v: 0 }; tl.to(n2, { v: 77, duration: 1.4, ease: "power2.out", onUpdate: () => { document.querySelector("#stat-n2").textContent = Math.round(n2.v) + "%"; } }, 5.2);
+    tl.fromTo("#stat-src", { opacity: 0 }, { opacity: 1, duration: 0.6 }, 1.2);
+    tl.to("#stat-wrap", { opacity: 0, duration: 0.4 }, 10.5);
+    window.__timelines["stat"] = tl;
+  </script>
+</template>
