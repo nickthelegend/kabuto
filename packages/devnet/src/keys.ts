@@ -9,7 +9,7 @@ import type { Hex } from "viem";
  */
 const FILE = fileURLToPath(new URL("../.devnet-keys.json", import.meta.url));
 
-export type Role = "deployer" | "owner" | "bot" | "victim";
+export type Role = "deployer" | "owner" | "bot" | "victim" | "filler" | "filler2" | "attacker";
 
 export function key(role: Role): Hex {
   const all: Partial<Record<Role, Hex>> = existsSync(FILE) ? JSON.parse(readFileSync(FILE, "utf8")) : {};
