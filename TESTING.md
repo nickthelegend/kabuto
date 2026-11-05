@@ -22,6 +22,21 @@ The funded full run is recorded in [`packages/e2e/out/run-2026-11-05T18-04-13-14
 | Underpay retry | [0x13f15852…87cde](https://explorer.altmempool.wtf/tx/0x13f158526206a10d702052b9244b558d4479c16f571912a91b8253f865087cde) | Admitted, settlement frame simulated as reverted, stayed `New` for 120 s; block-to-block balance assertion could not run |
 | Soak setup stake | [0x12907ca8…6660d](https://explorer.altmempool.wtf/tx/0x12907ca88e35a4e9a7205e027289d63d300f2d4d1d56c06e2af6f31104b6660d) | Admitted, stayed `New` for 120 s; no soak round ran |
 
+## Live app runs (Nov 6 2026, deployed app + hosted bot)
+
+Recorded with `packages/demo/record2.mjs` against https://kabuto-self.vercel.app and the hosted sandwich bot; the bot's own `/attempts` record is the source for the block positions.
+
+| Run | Transaction | Result |
+| --- | --- | --- |
+| Ordinary swap, 1,500 kUSD, 2% slippage | [0xbf074d56…de29](https://explorer.altmempool.wtf/tx/0xbf074d561e3ed81a19eb3c4eea24efa7e6d8ec48511543fd318682d72afbde29) | Sandwiched: bot front-run, victim, bot back-run at indices 0, 1, 2 of block 407,046; 0.04543 WETH vs 0.04626 quoted (−1.80%) |
+| Same swap, protection on (±0.5%) | [0x2e8b5b7c…2e92](https://explorer.altmempool.wtf/tx/0x2e8b5b7ca0801c1ba0931593d33f099a19a0189ed057d775b74b9d88cf7b2e92) | Bot front-ran it (block 407,052, index 0); explorer status `Cancelled`, no receipt, 0 gas |
+| Film take, ordinary swap | 0x94d3996f…ed2f | Sandwiched at indices 0, 1, 2 of block 407,289 (−1.80%) |
+| Film take, protection on | 0x02d38de2…5a63 | Bot front-ran it (block 407,292, index 0); `Cancelled`, 0 gas |
+| Intent, 300 kUSD → WETH | [0xdfd70b01…c065](https://explorer.altmempool.wtf/tx/0xdfd70b014486b1d92669271318502d159570de709be0dbb2a99682da49b8c065) | Filled by the hosted filler, which paid the gas; account received 0.00886 WETH (minimum 0.00885) |
+| Miss, recorded honestly | 0x76d52215…3fd1 | Victim landed one block before the bot's front-run: no sandwich (the viewer prints TOO SLOW) |
+
+Arkiv: `pnpm --dir packages/filler exec vitest run test/arkiv.test.ts` → 2 passed (byte round trip, live public Rabdi read), 1 skipped (live write; needs a funded writer).
+
 ## Coverage
 
 - **Foundry:** The 0.8.28 tests etch controllable helpers at the addresses created by `HegotaSupport`, following the workshop's opcode mock pattern. They exercise account signer and price bounds; every `BadIntentShape` code 1–14, signature checks, settlement and Dutch decay; both paymaster price and shape checks (codes 1–13), owner permissions; filler payment signature and access restrictions; and router liquidity, swap, slippage, and filler swaps against a real v4 PoolManager. The real PoolManager's 0.8.26 creation bytecode is stored in `packages/contracts/test/PoolManager.creation.json`, compiled from `lib/v4-core/src/PoolManager.sol` with `forge build --root packages/contracts/lib/v4-core`. Regressions verify the intent transfer's exact calldata length, the paymaster's entire v4 PoolKey, and the approval's router and amount.
@@ -44,6 +59,6 @@ The full test command creates fresh accounts on each run. Set `KABUTO_REUSE_FIXT
 
 - Chain testing is on devnet 1337 only. The public faucet was empty at first; an external test-role top-up permitted the funded run.
 - After the bot-first race, multiple independently signed transactions, including a fresh P256 account and a fresh soak account, passed admission and simulation but stayed `New` without receipts for at least 120 seconds. This prevented the sponsored, P256, intent-fill, underpay, and soak completion assertions. Raising the P256 fee to 10 gwei did not change that result. The gateway and chain still answered reads and produced blocks.
-- The shared paymaster in `deployments/1337.json` predates the PoolKey and approval validation fix. The live suite uses that shared deployment as instructed; the new checks are covered by Foundry until a new paymaster deployment is authorized.
+- The paymaster in `deployments/1337.json` (`0x2b594f59…afdf9`) is the redeployment that includes the PoolKey and approval validation fix (commit `b292fcd`). The e2e run above predates it; the fix itself is covered by the Foundry regressions.
 - Reputation effects for accounts with many `Cancelled` transactions remain untested at scale.
 - The Foundry opcode helpers model frame metadata; only the live suite exercises actual frame transaction admission and settlement semantics.
