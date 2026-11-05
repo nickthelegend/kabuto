@@ -5,10 +5,14 @@ import { pub } from "./lib/chain";
 import { balances, bandFor, fmt, priceFromSqrt, quote, sqrtPrice, tokenIn, tokenOut, type Side } from "./lib/market";
 import { forget, load, onboard, STEPS, type Saved, type Step } from "./lib/wallet";
 import { kabutoSwap, normalSwap, type Attempt } from "./lib/swap";
-import { registryAbi } from "./lib/abi";
+import { registryAbi, tokenAbi } from "./lib/abi";
+import { sendLegacy } from "./lib/chain";
+import { encodeFunctionData } from "viem";
 import { Landing } from "./Landing";
 import { postIntent, relayEvents, signIntent, type RelayEvent, type SignedIntent } from "./lib/intent";
 
+/** Slippage of the comparison "normal wallet" swap (a common wallet default range is 0.5%-3%). */
+const NORMAL_SLIPPAGE_BPS = 200;
 const short = (a?: string, n = 6) => (a ? `${a.slice(0, n)}…${a.slice(-4)}` : "");
 const explorerTx = (h?: string) => (h ? `${D.explorer}tx/${h}` : D.explorer);
 
@@ -245,10 +249,28 @@ function Account({ w, bals, stake, onReset }: { w: Saved; bals: any; stake: bigi
         <div className="meta">
           <span className="chip gold">P256 signer {short(w.owner, 6)}</span>
           <span className="chip">alt-mempool</span>
-          <button className="chip" style={{ cursor: "pointer", background: "none" }} onClick={() => { if (confirm("Forget this devnet wallet in this browser?")) onReset(); }}>reset</button>
+          <TopUp w={w} />
+          <button className="chip" style={{ cursor: "pointer", background: "none" }} onClick={() => { if (confirm("Forget this devnet account in this browser?")) onReset(); }}>reset</button>
         </div>
       </div>
     </section>
+  );
+}
+
+function TopUp({ w }: { w: Saved }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const go = async () => {
+    setBusy(true); setErr(null);
+    try {
+      for (const to of [w.account!, w.funder]) await sendLegacy(w.funderKey, { to: D.kusd, data: encodeFunctionData({ abi: tokenAbi, functionName: "faucet", args: [to] }) });
+    } catch (e: any) { setErr(e?.shortMessage ?? e?.message ?? String(e)); }
+    finally { setBusy(false); }
+  };
+  return (
+    <button className="chip gold" style={{ cursor: "pointer" }} disabled={busy} onClick={go} title={err ?? "Mint 1,000 devnet kUSD to your Kabuto account and to the comparison wallet"}>
+      {busy ? "minting…" : err ? "top-up failed" : "+1,000 test kUSD"}
+    </button>
   );
 }
 
@@ -281,7 +303,7 @@ function SwapCard({ w, sqrtP, bals, nbals, onAttempt, onIntent, relayLive }: { w
     setBusy(which);
     try {
       if (which === "kabuto") { signedCenter.current = sqrtP; await kabutoSwap(w, side, amountIn, bandBps, onAttempt); }
-      else await normalSwap(w, side, amountIn, Math.max(bandBps, 100), onAttempt);
+      else await normalSwap(w, side, amountIn, NORMAL_SLIPPAGE_BPS, onAttempt);
     } finally { setBusy(null); signedCenter.current = null; }
   };
 
@@ -322,7 +344,7 @@ function SwapCard({ w, sqrtP, bals, nbals, onAttempt, onIntent, relayLive }: { w
             {short_ && <div className="err">Not enough {tin.symbol} in the Kabuto account.</div>}
             <button className="btn shu" disabled={!amountIn || !!busy || !!short_} onClick={() => go("kabuto")}>{busy === "kabuto" ? "Pinned swap in flight…" : "Swap with Kabuto"}</button>
             <button className="btn ghost" disabled={!amountIn || !!busy || (nbals && (side === "buy" ? nbals.kusd : nbals.weth) < (amountIn ?? 0n))} onClick={() => go("normal")}>
-              {busy === "normal" ? "Normal swap in flight…" : `Same swap from a normal wallet (${(Math.max(bandBps, 100) / 100).toFixed(1)}% slippage)`}
+              {busy === "normal" ? "Normal swap in flight…" : `Same swap from a normal wallet (${(NORMAL_SLIPPAGE_BPS / 100).toFixed(1)}% slippage)`}
             </button>
             <p className="hint">The normal wallet is an ordinary EOA ({short(w.funder, 6)}) sending the same router call to the public mempool with a slippage floor.</p>
           </>
