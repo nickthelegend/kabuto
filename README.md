@@ -59,6 +59,26 @@ n  SENDER   account   settleIntent(tokenOut, balanceBefore, startOut, endOut, st
 
 The paymaster's VERIFY frame inspects the transaction with `TXPARAM`, `FRAMEPARAM` and `FRAMEDATACOPY`, and approves payment only for a price-pinned approve/swap/fee batch on its pool that repays it in the swap's output token. It also checks the price band and the sender's input balance, so a moved price makes the tx invalid instead of costing the sponsor gas.
 
+## Battle-tested
+
+See [TESTING.md](TESTING.md) for the real counts and every hash.
+
+- **Foundry:** 10 tests, 0 failed, 512 fuzz executions (frame opcodes mocked at the `HegotaSupport` helper addresses; swaps against a real v4 PoolManager). The suite found two shape-check gaps (extra calldata on the intent transfer; the paymaster checking only the pool's currencies), both fixed with regression tests.
+- **Live devnet e2e:** protected swap mined; a bot-first race left the pinned swap `Cancelled` with 0 gas; out-of-band and all three tampered fills refused at admission. Later runs were admitted but not mined while the public devnet's inclusion stalled (documented, not hidden).
+- **A real sandwich bot** (`packages/bot`) watching both mempools: against an ordinary wallet's 1,500 kUSD swap it landed front, victim and back in one block and the victim filled 1.80% worse than its quote; against the same Kabuto swap, the Kabuto swap was never included and paid 0 gas.
+- **Mainnet replay** (`packages/replay`): 497 Uniswap v4 swaps sandwiched by the same sender in 27 hours (blocks 26,299,825–26,307,824); 388 of 501 evaluated would have failed a ±0.5% pin. Heuristic and caveats in [METHOD.md](packages/replay/METHOD.md).
+
+## SDK
+
+```ts
+import { createKabuto, p256Signer, devnet1337 } from "@kabuto/sdk";
+const kabuto = createKabuto({ deployment: devnet1337 });
+await kabuto.protectedSwap({ account, signer: p256Signer(key), zeroForOne: false, amountIn: 300_000000n, bandBps: 50 });
+const intent = await kabuto.signIntent({ account, signer: p256Signer(key), tokenIn, maxIn, tokenOut, startOut, endOut, startTime, deadline });
+```
+
+Full API in [packages/sdk/README.md](packages/sdk/README.md). The verify-gas budget is scheme-aware: `MAX_VERIFY_GAS` (100,000) covers every VERIFY limit plus 2,800 per secp256k1 and 6,700 per P256 signature.
+
 ## Repository
 
 | Package | What |
