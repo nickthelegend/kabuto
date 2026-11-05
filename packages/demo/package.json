@@ -1,0 +1,8 @@
+{
+  "name": "@kabuto/demo",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": { "record": "node record.mjs" },
+  "devDependencies": { "playwright": "1.63.0" }
+}
