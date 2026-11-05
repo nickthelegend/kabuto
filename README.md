@@ -106,6 +106,8 @@ Reading another contract's storage in VERIFY breaks the canonical mempool's stor
 
 ### Open intent frames (`KabutoAccount.verifyIntent` / `settleIntent`)
 
+New to intents? [docs/INTENTS.md](docs/INTENTS.md) explains them from zero.
+
 The owner signs `intentDigest(intent)` as an **explicit 32-byte signature `msg`**, not the transaction's signature hash. EIP-8141's security considerations warn that such an approval "authorizes an open-ended list" of frames and that validation "must therefore bind its approval to the entire set of frames it is willing to authorize". `verifyIntent` does that:
 
 ```
