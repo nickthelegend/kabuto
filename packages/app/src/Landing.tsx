@@ -1,236 +1,220 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
 import { D } from "./lib/config";
 import { pub } from "./lib/chain";
 import { priceFromSqrt, sqrtPrice } from "./lib/market";
-import { PROOF, REFUSED, REPLAY } from "./lib/proof";
+import { PROOF, REPLAY } from "./lib/proof";
+import "./landing.css";
+
+gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 const short = (h: string, n = 8) => `${h.slice(0, n)}…${h.slice(-4)}`;
 const tx = (h: string) => `${D.explorer}tx/${h}`;
+const stoppedPct = Math.round((REPLAY.stopped / REPLAY.evaluated) * 100);
 
-const STEPS: { img: string; video?: string; n: string; t: string; d: string }[] = [
-  {
-    img: "/step-1-pin.jpg",
-    n: "01",
-    t: "Your swap carries its own price",
-    d: "Kabuto signs your swap with a price band. The band lives inside the transaction's VERIFY frame, the part of an EIP-8141 transaction the network runs before anything else.",
-  },
-  {
-    img: "/step-2-raider.jpg",
-    n: "02",
-    t: "A bot sees it and buys first",
-    d: "The classic sandwich: a bot spots your swap in the mempool, jumps ahead of it, and moves the price against you before your trade lands.",
-  },
-  {
-    img: "/step-3-vanish.jpg",
-    video: "/step-3-vanish.mp4",
-    n: "03",
-    t: "Your swap stops existing",
-    d: "When the price leaves your band, the VERIFY frame fails, and a transaction whose VERIFY fails is invalid. It is never included, nobody can fill it, and you pay nothing. The bot is left holding its trade.",
-  },
-  {
-    img: "/step-4-lanterns.jpg",
-    n: "04",
-    t: "Or let anyone race to fill it",
-    d: "Post an intent instead: you sign only “this much in, at least this much out”. Any filler can complete the transaction through Uniswap v4 and pay the gas. The mempool itself is the auction.",
-  },
+const STEPS = [
+  { img: "/step-1-pin.jpg", n: "01", t: "Your swap carries its own price." },
+  { img: "/step-2-raider.jpg", n: "02", t: "A bot buys in front of you." },
+  { img: "/step-3-vanish.jpg", video: "/step-3-vanish.mp4", n: "03", t: "Your swap stops existing. 0 gas." },
+  { img: "/step-4-lanterns.jpg", n: "04", t: "Or post an intent. Fillers race and pay the gas." },
 ];
 
-const FRAMES = [
-  { m: "VERIFY", who: "your account", what: "verifyIntent(intent): your signature over the intent, and every frame below checked" },
-  { m: "VERIFY", who: "the filler", what: "pay(): the filler co-signs the whole tx and pays the gas" },
-  { m: "SENDER", who: "your account", what: "tokenIn.transfer(filler, ≤ maxIn)  · atomic" },
-  { m: "DEFAULT", who: "the filler", what: "fill(): swaps through Uniswap v4 and pays you · atomic, cannot act as you" },
-  { m: "SENDER", who: "your account", what: "settleIntent(): reverts the whole batch unless you received the Dutch-decayed minimum" },
+const SDK_LINES: [string, string][] = [
+  ["k", `import { createKabuto, p256Signer, devnet1337 } from "@kabuto/sdk";`],
+  ["", ``],
+  ["", `const kabuto = createKabuto({ deployment: devnet1337 });`],
+  ["c", `// sandwiched = never included, costs 0`],
+  ["", `await kabuto.protectedSwap({ account, signer, zeroForOne, amountIn, bandBps: 50 });`],
+  ["c", `// or sign only an intent and let anyone fill it`],
+  ["", `const intent = await kabuto.signIntent({ account, signer, tokenIn, maxIn, tokenOut, startOut, endOut, deadline });`],
 ];
 
-const SDK = `import { createKabuto, p256Signer, devnet1337 } from "@kabuto/sdk";
-
-const kabuto = createKabuto({ deployment: devnet1337 });
-const me = p256Signer(localKey);
-
-// 1. route it yourself: a sandwich makes this tx invalid, so it costs 0
-await kabuto.protectedSwap({ account, signer: me, zeroForOne: false, amountIn: 300_000000n, bandBps: 50 });
-
-// 2. or sign only an intent and let anyone race to fill it
-const intent = await kabuto.signIntent({ account, signer: me, tokenIn: kUSD, maxIn: 300_000000n,
-  tokenOut: WETH, startOut, endOut, deadline });
-await fetch(RELAY + "/intents", { method: "POST", body: JSON.stringify(intent) });`;
-
-const FAQ = [
-  {
-    q: "Why not just set slippage to 0?",
-    a: "A failed swap still lands on chain and you still pay for it, and a bot can still sandwich up to your limit. With Kabuto the check runs before the transaction is valid: if the price moved, there is no transaction to pay for.",
-  },
-  {
-    q: "Isn't signing only an intent dangerous?",
-    a: "Yes, and EIP-8141's own security section says so: an approval that doesn't commit to the frames authorizes an open-ended list. Kabuto's VERIFY frame constrains every frame (one transfer up to your max, filler frames that can't act as you, an atomic batch, and a final settlement bound to your balance). Every tampered fill we tried was refused before entering a block.",
-  },
-  {
-    q: "Who runs the auction?",
-    a: "Nobody. Fillers submit the same intent with the same nonce; the mempool keeps the one paying the highest fee. The intent relay only passes signed intents around: it holds no funds and cannot change a single byte.",
-  },
-  {
-    q: "Can I use it on mainnet today?",
-    a: "Not yet. EIP-8141 frame transactions arrive with the Hegotá upgrade. Kabuto runs on the Ethereum Foundation's public frame-transaction devnet, with Uniswap v4's real contracts, so it is ready the day mainnet is.",
-  },
-];
-
-function useLive() {
-  const [block, setBlock] = useState<bigint | null>(null);
-  const [price, setPrice] = useState<number | null>(null);
+function useLivePrice() {
+  const [p, setP] = useState<{ block: bigint; price: number } | null>(null);
   useEffect(() => {
     let alive = true;
-    const tick = async () => {
-      try {
-        const [b, p] = await Promise.all([pub.getBlockNumber(), sqrtPrice()]);
-        if (alive) { setBlock(b); setPrice(priceFromSqrt(p)); }
-      } catch { /* devnet unreachable: cards show their empty state */ }
-    };
-    tick();
-    const t = setInterval(tick, 4000);
+    const tick = async () => { try { const [b, s] = await Promise.all([pub.getBlockNumber(), sqrtPrice()]); if (alive) setP({ block: b, price: priceFromSqrt(s) }); } catch { /* offline */ } };
+    tick(); const t = setInterval(tick, 3000);
     return () => { alive = false; clearInterval(t); };
   }, []);
-  return { block, price };
+  return p;
 }
 
 export function Landing() {
-  const live = useLive();
-  const [faq, setFaq] = useState<number | null>(0);
-  const [heroVideo, setHeroVideo] = useState(true);
+  const root = useRef<HTMLDivElement>(null);
+  const live = useLivePrice();
+
+  useGSAP(() => {
+    const mm = gsap.matchMedia();
+    mm.add({ motion: "(prefers-reduced-motion: no-preference)", wide: "(min-width: 900px)" }, (ctx) => {
+      const { motion, wide } = ctx.conditions as { motion: boolean; wide: boolean };
+      if (!motion) return;
+
+      /* hero: words rise, widgets land, then float */
+      const intro = gsap.timeline({ defaults: { ease: "power4.out" } });
+      intro
+        .from(".ln-eyebrow", { y: 16, opacity: 0, duration: 0.7 })
+        .from(".ln-h1 .w > span", { yPercent: 110, duration: 1.1, stagger: 0.06 }, "-=0.4")
+        .from(".ln-ctas > *", { y: 20, opacity: 0, duration: 0.7, stagger: 0.08 }, "-=0.7")
+        .from(".ln-swap", { y: 80, opacity: 0, scale: 0.94, duration: 1.2 }, "-=0.6")
+        .from(".ln-chip.bad", { x: -60, opacity: 0, duration: 1 }, "-=0.9")
+        .from(".ln-chip.good", { x: 60, opacity: 0, duration: 1 }, "<");
+      gsap.to(".ln-chip.bad", { y: -10, duration: 2.6, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 1.8 });
+      gsap.to(".ln-chip.good", { y: 10, duration: 3, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 1.8 });
+
+      /* hero video: slow push-in while scrolling away, content drifts up */
+      gsap.to(".ln-hero-media", { scale: 1.18, yPercent: 12, ease: "none", scrollTrigger: { trigger: ".ln-hero", start: "top top", end: "bottom top", scrub: true } });
+      gsap.to(".ln-hero-copy", { yPercent: -30, opacity: 0.2, ease: "none", scrollTrigger: { trigger: ".ln-hero", start: "top top", end: "bottom top", scrub: true } });
+      gsap.to(".ln-widgets", { yPercent: -12, ease: "none", scrollTrigger: { trigger: ".ln-hero", start: "center center", end: "bottom top", scrub: true } });
+
+      /* numbers count up */
+      gsap.utils.toArray<HTMLElement>(".ln-count").forEach((el) => {
+        const to = Number(el.dataset.to);
+        const o = { v: 0 };
+        gsap.to(o, { v: to, duration: 1.6, ease: "power2.out", scrollTrigger: { trigger: el, start: "top 85%", once: true }, onUpdate: () => { el.textContent = Math.round(o.v).toLocaleString("en-US"); } });
+      });
+      gsap.from(".ln-stat", { y: 40, opacity: 0, stagger: 0.12, duration: 0.9, ease: "power3.out", scrollTrigger: { trigger: ".ln-stats", start: "top 80%" } });
+
+      /* what the bot sees: pinned, scrubbed story */
+      const story = gsap.timeline({ scrollTrigger: { trigger: ".ln-bot", start: wide ? "top top" : "top 20%", end: wide ? "+=1400" : "+=700", scrub: 0.6, pin: wide } });
+      story
+        .from(".ln-bot .ln-col", { y: 60, opacity: 0, stagger: 0.15, duration: 1 })
+        .from(".ln-row.r0", { x: -30, opacity: 0, stagger: 0.1, duration: 0.6 })
+        .from(".ln-row.r1", { x: -30, opacity: 0, stagger: 0.1, duration: 0.6 })
+        .to(".ln-row.gone", { borderColor: "rgba(166,228,191,.55)", backgroundColor: "rgba(166,228,191,.06)", duration: 0.4 })
+        .to(".ln-row.gone .lbl", { opacity: 0.35, duration: 0.5 }, "<")
+        .from(".ln-row.gone .v", { opacity: 0, scale: 0.6, duration: 0.5 }, "<")
+        .from(".ln-row.r2", { x: -30, opacity: 0, stagger: 0.1, duration: 0.6 })
+        .from(".ln-res", { y: 30, opacity: 0, scale: 0.96, stagger: 0.15, duration: 0.8 });
+
+      /* four steps: pinned horizontal track on desktop, stacked reveal on phones */
+      if (wide) {
+        const track = document.querySelector<HTMLElement>(".ln-track")!;
+        const move = gsap.to(track, { x: () => -(track.scrollWidth - window.innerWidth + 80), ease: "none", scrollTrigger: { trigger: ".ln-steps", start: "top top", end: () => "+=" + (track.scrollWidth - window.innerWidth + 80), scrub: 0.8, pin: true, invalidateOnRefresh: true } });
+        gsap.utils.toArray<HTMLElement>(".ln-step").forEach((s) => {
+          gsap.fromTo(s.querySelector(".ln-step-media"), { scale: 1.25 }, { scale: 1, ease: "none", scrollTrigger: { trigger: s, containerAnimation: move, start: "left right", end: "right left", scrub: true } });
+          gsap.from(s.querySelector(".ln-step-cap"), { y: 40, opacity: 0, duration: 0.8, ease: "power3.out", scrollTrigger: { trigger: s, containerAnimation: move, start: "left 75%", toggleActions: "play none none reverse" } });
+        });
+      } else {
+        ScrollTrigger.batch(".ln-step", { start: "top 85%", onEnter: (els) => gsap.from(els, { y: 50, opacity: 0, stagger: 0.12, duration: 0.8, ease: "power3.out" }) });
+      }
+
+      /* proof rows + sdk lines */
+      ScrollTrigger.batch(".ln-proof li", { start: "top 90%", onEnter: (els) => gsap.from(els, { y: 24, opacity: 0, stagger: 0.06, duration: 0.6, ease: "power3.out" }) });
+      gsap.from(".ln-code .ln", { opacity: 0, x: -14, stagger: 0.12, duration: 0.5, ease: "power2.out", scrollTrigger: { trigger: ".ln-code", start: "top 75%" } });
+      gsap.from(".ln-head", { y: 40, opacity: 0, duration: 1, ease: "power3.out", stagger: 0.1, scrollTrigger: { trigger: ".ln-head", start: "top 85%" } });
+      gsap.fromTo(".ln-end-glow", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, ease: "none", scrollTrigger: { trigger: ".ln-end", start: "top bottom", end: "center center", scrub: true } });
+    });
+    const refresh = () => ScrollTrigger.refresh();
+    window.addEventListener("load", refresh);
+    document.fonts?.ready.then(refresh);
+    return () => window.removeEventListener("load", refresh);
+  }, { scope: root });
+
+  const words = (s: string) => s.split(" ").map((w, i) => <span className="w" key={i}><span>{w}</span></span>);
+
   return (
-    <>
-      <section className="l-hero frame" aria-label="Kabuto">
-        {heroVideo ? (
-          <video className="l-hero-media" src="/hero.mp4" poster="/hero.jpg" autoPlay muted loop playsInline onError={() => setHeroVideo(false)} />
-        ) : (
-          <img className="l-hero-media" src="/hero.jpg" alt="" />
-        )}
-        <div className="l-hero-shade" aria-hidden />
-        <div className="l-hero-copy">
-          <span className="eyebrow"><i className="pulse" aria-hidden />Live on the EIP-8141 devnet · Uniswap v4</span>
-          <h1>Swaps that only happen <span className="moon">at your price.</span></h1>
-          <p className="lede">
-            Route a swap yourself and a sandwich makes it vanish, for free. Or post an intent and let anyone race to fill it,
-            with no settlement contract and no auction server: the mempool is the auction.
-          </p>
-          <div className="cta">
-            <a className="btn-moon" href="#/app">Open Kabuto DEX</a>
-            <a className="btn-line" href="#how">How it works</a>
+    <div className="ln" ref={root}>
+      <nav className="ln-nav">
+        <a className="ln-wm" href="#/">Kabuto</a>
+        <div className="ln-links"><a href="#how">How it works</a><a href="#sdk">SDK</a><a href="#proof">Proof</a></div>
+        <a className="ln-cta" href="#/app">Launch app</a>
+      </nav>
+
+      <header className="ln-hero">
+        <div className="ln-hero-media" aria-hidden>
+          <video src="/hero.mp4" poster="/hero.jpg" autoPlay muted loop playsInline />
+        </div>
+        <div className="ln-hero-shade" aria-hidden />
+        <div className="ln-hero-copy">
+          <span className="ln-eyebrow"><i />Live on the EIP-8141 devnet · Uniswap v4{live ? ` · block ${live.block.toLocaleString("en-US")}` : ""}</span>
+          <h1 className="ln-h1">{words("Swap at your price.")}<br /><em>{words("Or not at all.")}</em></h1>
+          <div className="ln-ctas"><a className="ln-btn g" href="#/app">Launch app</a><a className="ln-btn l" href="#bot">See the sandwich</a></div>
+        </div>
+        <div className="ln-widgets">
+          <div className="ln-chip bad"><small>Ordinary wallet</small><b>Sandwiched · −1.80%</b><span>front · you · back, one block</span></div>
+          <div className="ln-swap" aria-hidden>
+            <div className="ln-swap-h"><b>Swap</b><span>Uniswap v4</span></div>
+            <div className="ln-bx"><small>You pay</small><div><b>1,500</b><span className="ln-tk"><i />kUSD</span></div></div>
+            <div className="ln-bx"><small>You receive</small><div><b>{live ? (1500 / live.price).toFixed(4) : "…"}</b><span className="ln-tk w"><i />WETH</span></div></div>
+            <div className="ln-pr"><i className="sh" />Sandwich protection<i className="t" /></div>
+            <div className="ln-go">Swap</div>
+          </div>
+          <div className="ln-chip good"><small>Kabuto</small><b>Sandwich blocked</b><span>never included · 0 gas</span></div>
+        </div>
+      </header>
+
+      <section className="ln-stats">
+        <div className="ln-stat"><b><span className="ln-count" data-to={REPLAY.uniqueVictims}>{REPLAY.uniqueVictims}</span></b><span>swaps sandwiched on Uniswap v4 mainnet in {REPLAY.hours} hours</span></div>
+        <div className="ln-stat"><b className="g"><span className="ln-count" data-to={stoppedPct}>{stoppedPct}</span>%</b><span>of them a ±{REPLAY.bandPct}% Kabuto pin would have stopped</span></div>
+        <div className="ln-stat"><b><span className="ln-count" data-to={0}>0</span> gas</b><span>paid when a protected swap is blocked</span></div>
+      </section>
+
+      <section className="ln-bot" id="bot">
+        <div className="ln-wrap">
+          <span className="ln-tag ln-head">Same bot · real devnet runs</span>
+          <h2 className="ln-h2 ln-head">What the bot sees.</h2>
+          <div className="ln-cols">
+            <div className="ln-col">
+              <h3>Ordinary wallet <span>2% slippage</span></h3>
+              <div className="ln-row bot r0"><span className="n">idx 0</span><span className="lbl">Bot buys first</span><span className="v">front-run</span></div>
+              <div className="ln-row you r1"><span className="n">idx 1</span><span className="lbl">Your swap</span><span className="v">fills worse</span></div>
+              <div className="ln-row bot r2"><span className="n">idx 2</span><span className="lbl">Bot sells into you</span><span className="v">back-run</span></div>
+              <a className="ln-res bad" href={tx(PROOF[3].hash)} target="_blank" rel="noreferrer"><small>You lost</small><b>−1.80%</b></a>
+            </div>
+            <div className="ln-col">
+              <h3>Kabuto <span>price pinned ±0.5%</span></h3>
+              <div className="ln-row bot r0"><span className="n">idx 0</span><span className="lbl">Bot buys first</span><span className="v">front-run</span></div>
+              <div className="ln-row gone r1"><span className="n">—</span><span className="lbl">Your swap</span><span className="v">never included</span></div>
+              <div className="ln-row na r2"><span className="n">—</span><span className="lbl">Nothing to sell into</span><span className="v">bot holds −217 kUSD</span></div>
+              <a className="ln-res good" href={tx(PROOF[4].hash)} target="_blank" rel="noreferrer"><small>You paid</small><b>0 gas</b></a>
+            </div>
           </div>
         </div>
-        <div className="l-float" aria-live="polite">
-          <div className="fcard"><small>Devnet block</small><b className="mono">{live.block !== null ? `#${live.block}` : "connecting…"}</b></div>
-          <div className="fcard"><small>WETH / kUSD on Uniswap v4</small><b className="mono">{live.price !== null ? live.price.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "…"}</b></div>
-          <div className="fcard shu"><small>Sandwiched swap</small><b>Cancelled · 0 gas</b><a className="mono" href={tx(PROOF[2].hash)} target="_blank" rel="noreferrer">{short(PROOF[2].hash)}</a></div>
-        </div>
       </section>
 
-      <section className="l-stats" aria-label="Mainnet sandwiches">
-        <div><b>{REPLAY.uniqueVictims}</b><span>Uniswap v4 swaps on mainnet sandwiched by the same sender in {REPLAY.hours} hours</span></div>
-        <div><b className="moon">{Math.round((REPLAY.stopped / REPLAY.evaluated) * 100)}%</b><span>would have been impossible with a ±{REPLAY.bandPct}% Kabuto pin</span></div>
-        <div><b>0</b><span>gas a Kabuto swap pays when the price moves against it</span></div>
-        <p className="fine">Blocks {REPLAY.fromBlock.toLocaleString()}–{REPLAY.toBlock.toLocaleString()} ({REPLAY.fromIso} → {REPLAY.toIso}). Heuristic, read-only scan of PoolManager Swap logs; method and caveats in packages/replay/METHOD.md.</p>
-      </section>
-
-      <section className="l-sec" id="how">
-        <div className="l-head">
-          <span className="eyebrow">How it works</span>
-          <h2>A sandwich needs your swap to land after the bot's. Kabuto makes sure it can't.</h2>
-        </div>
-        <div className="l-steps">
+      <section className="ln-steps" id="how">
+        <div className="ln-steps-h"><span className="ln-tag">How it works</span><h2 className="ln-h2">Four frames.</h2></div>
+        <div className="ln-track">
           {STEPS.map((s) => (
-            <article className="l-step" key={s.n}>
-              {s.video ? <video src={s.video} poster={s.img} autoPlay muted loop playsInline aria-hidden /> : <img src={s.img} alt="" loading="lazy" />}
-              <div>
-                <span className="mono num">{s.n}</span>
-                <h3>{s.t}</h3>
-                <p>{s.d}</p>
-              </div>
+            <article className="ln-step" key={s.n}>
+              <div className="ln-step-media">{s.video ? <video src={s.video} poster={s.img} autoPlay muted loop playsInline /> : <img src={s.img} alt="" />}</div>
+              <div className="ln-step-cap"><span className="ln-tag">{s.n}</span><b>{s.t}</b></div>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="l-sec l-two">
-        <div className="l-head">
-          <span className="eyebrow">Two ways to swap, one rule</span>
-          <h2>A Kabuto swap is only valid if you get your price.</h2>
-        </div>
-        <div className="l-modes">
-          <article className="frame mode">
-            <span className="tag">Protected swap</span>
-            <h3>You route it.</h3>
-            <p>Your account's VERIFY frame reads the Uniswap v4 pool price. Outside your band, the transaction is invalid: never included, never charged. Add the Kabuto paymaster and the swap even pays its own gas from what you receive.</p>
-            <ul className="mono"><li>VERIFY · verifyPrice(pool, band)</li><li>SENDER · approve · atomic</li><li>SENDER · swap on v4</li></ul>
-          </article>
-          <article className="frame mode">
-            <span className="tag gold">Open intent</span>
-            <h3>Anyone routes it.</h3>
-            <p>You sign one digest: up to this much in, at least this much out, decaying over a few minutes. Fillers compete to complete it through Uniswap v4 and pay the gas. The first one it pays wins; same-nonce replacement settles any tie.</p>
-            <ul className="mono"><li>sign(intentDigest) · no tx, no gas</li><li>filler builds + pays</li><li>settle: ≥ decayed minimum, or nothing</li></ul>
-          </article>
-        </div>
+      <section className="ln-sdk ln-wrap" id="sdk">
+        <div><span className="ln-tag ln-head">@kabuto/sdk</span><h2 className="ln-h2 ln-head">Any wallet.<br />A few lines.</h2></div>
+        <pre className="ln-code"><code>{SDK_LINES.map(([k, l], i) => <span className={`ln ${k}`} key={i}>{l || " "}</span>)}</code></pre>
       </section>
 
-      <section className="l-sec" id="security">
-        <div className="l-head">
-          <span className="eyebrow">The EIP warned about this</span>
-          <h2>We built the path the spec calls dangerous, and made it safe.</h2>
-        </div>
-        <div className="l-warn frame">
-          <blockquote>
-            “Validation code must therefore bind its approval to the entire set of frames it is willing to authorize.”
-            <cite>EIP-8141, Security Considerations</cite>
-          </blockquote>
-          <ol className="l-frames">
-            {FRAMES.map((f, i) => (
-              <li key={i}><span className={`m m-${f.m.toLowerCase()}`}>{f.m}</span><span className="who">{f.who}</span><span className="what mono">{f.what}</span></li>
-            ))}
-          </ol>
-          <div className="l-attacks">
-            <h3>Tampered fills, refused before a block</h3>
-            <ul>
-              {REFUSED.map((r) => <li key={r.code}><span>{r.attack}</span><code>{r.code}</code></li>)}
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section className="l-sec" id="proof">
-        <div className="l-head">
-          <span className="eyebrow">Proof on chain</span>
-          <h2>Every claim on this page is a transaction you can open.</h2>
-        </div>
-        <div className="frame l-proof">
+      <section className="ln-proof ln-wrap" id="proof">
+        <span className="ln-tag ln-head">Proof on chain</span>
+        <h2 className="ln-h2 ln-head">Every claim is a transaction.</h2>
+        <ul>
           {PROOF.map((p) => (
-            <a key={p.hash} className="l-proof-row" href={tx(p.hash)} target="_blank" rel="noreferrer">
-              <span className="what">{p.what}</span>
-              <span className={`res ${p.tone}`}>{p.result}</span>
-              <span className="mono h">{short(p.hash, 10)}</span>
-            </a>
+            <li key={p.hash} data-tone={p.tone}>
+              <span className="w">{p.what}</span><span className="r">{p.result}</span>
+              <a href={tx(p.hash)} target="_blank" rel="noreferrer">{short(p.hash)} ↗</a>
+            </li>
           ))}
-        </div>
+        </ul>
       </section>
 
-      <section className="l-sec" id="sdk">
-        <div className="l-head">
-          <span className="eyebrow">@kabuto/sdk</span>
-          <h2>Any DEX or wallet can offer both, in a few lines.</h2>
-        </div>
-        <pre className="frame l-code"><code>{SDK}</code></pre>
+      <section className="ln-end ln-wrap">
+        <div className="ln-end-glow" aria-hidden />
+        <h2>Protect every swap.</h2>
+        <a className="ln-btn g" href="#/app">Launch app</a>
       </section>
 
-      <section className="l-sec l-faq">
-        <div className="l-head"><span className="eyebrow">Questions</span><h2>Straight answers.</h2></div>
-        <div>
-          {FAQ.map((f, i) => (
-            <div className={`qa ${faq === i ? "open" : ""}`} key={f.q}>
-              <button aria-expanded={faq === i} onClick={() => setFaq(faq === i ? null : i)}>{f.q}<span aria-hidden>{faq === i ? "−" : "+"}</span></button>
-              {faq === i && <p>{f.a}</p>}
-            </div>
-          ))}
-        </div>
-      </section>
-    </>
+      <footer className="ln-foot ln-wrap">
+        <span>Kabuto · EIP-8141 / ERC-8421 alt-mempool devnet (chain 1337) · Uniswap v4 · MIT</span>
+        <span><a href={D.explorer} target="_blank" rel="noreferrer">Explorer</a></span>
+      </footer>
+    </div>
   );
 }

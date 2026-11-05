@@ -7,7 +7,11 @@ import { forget, load, onboard, shortError, STEPS, type Saved, type Step } from 
 import { kabutoSwap, normalSwap, type Attempt } from "./lib/swap";
 import { postIntent, relayEvents, signIntent, type RelayEvent, type SignedIntent } from "./lib/intent";
 import { tokenAbi } from "./lib/abi";
+import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import "./dex.css";
+
+const spring = { type: "spring", stiffness: 520, damping: 38 } as const;
+const pop = { initial: { opacity: 0, y: 18, scale: 0.98 }, animate: { opacity: 1, y: 0, scale: 1 }, exit: { opacity: 0, y: -10, scale: 0.98 }, transition: { type: "spring", stiffness: 380, damping: 32 } } as const;
 
 const short = (a?: string, n = 6) => (a ? `${a.slice(0, n)}…${a.slice(-4)}` : "");
 const txUrl = (h?: string) => `${D.explorer}tx/${h}`;
@@ -43,12 +47,17 @@ export function Dex() {
   useEffect(() => { refresh(); }, [refresh, live.block]);
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="dx">
       <header className="dx-nav">
         <a className="dx-brand" href="#/">Kabuto</a>
         <nav className="dx-tabs" role="tablist" aria-label="Kabuto">
-          <button role="tab" aria-selected={tab === "swap"} onClick={() => setTab("swap")}>Swap</button>
-          <button role="tab" aria-selected={tab === "intents"} onClick={() => setTab("intents")}>Intents</button>
+          {(["swap", "intents"] as const).map((t) => (
+            <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>
+              {tab === t && <motion.span className="dx-tab-pill" layoutId="dx-tab-pill" transition={spring} />}
+              <span className="dx-tab-l">{t === "swap" ? "Swap" : "Intents"}</span>
+            </button>
+          ))}
         </nav>
         <div className="dx-right">
           {w ? (
@@ -63,15 +72,20 @@ export function Dex() {
       </header>
 
       <main className="dx-main">
+        <AnimatePresence mode="wait" initial={false}>
+        <motion.div key={tab} className="dx-pane" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2, ease: [0.2, 0.7, 0.2, 1] }}>
         {tab === "swap" ? (
           <SwapPanel w={w} acct={acct} eoa={eoa} sqrtP={live.sqrtP} onConnect={() => setConnectOpen(true)} onDone={refresh} />
         ) : (
           <IntentsPanel w={w} acct={acct} sqrtP={live.sqrtP} onConnect={() => setConnectOpen(true)} />
         )}
+        </motion.div>
+        </AnimatePresence>
       </main>
 
       {connectOpen && <Connect onClose={() => setConnectOpen(false)} onDone={(s) => { setW(s); setConnectOpen(false); }} />}
     </div>
+    </MotionConfig>
   );
 }
 
@@ -179,14 +193,16 @@ function SwapPanel({ w, acct, eoa, sqrtP, onConnect, onDone }: { w: Saved | null
         <div className={`dx-protect ${protect ? "on" : ""}`}>
           <div className="dx-protect-l"><i className="dx-shield" aria-hidden /><b>Sandwich protection</b></div>
           <span className="dx-protect-s">{protect ? "On" : "Off"}</span>
-          <button role="switch" aria-checked={protect} aria-label="Sandwich protection" className="dx-switch" onClick={() => setProtect(!protect)}><i /></button>
+          <button role="switch" aria-checked={protect} aria-label="Sandwich protection" className="dx-switch" onClick={() => setProtect(!protect)}><motion.i animate={{ x: protect ? 22 : 0 }} transition={spring} /></button>
         </div>
-        {protect && (
-          <div className="dx-band" role="group" aria-label="Price pin">
-            <span>Price pin</span>
-            {[30, 50, 100].map((b) => <button key={b} aria-pressed={bandBps === b} onClick={() => setBandBps(b)}>±{(b / 100).toFixed(1)}%</button>)}
-          </div>
-        )}
+        <AnimatePresence initial={false}>
+          {protect && (
+            <motion.div className="dx-band" role="group" aria-label="Price pin" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22, ease: [0.2, 0.7, 0.2, 1] }} style={{ overflow: "hidden" }}>
+              <span>Price pin</span>
+              {[30, 50, 100].map((b) => <button key={b} aria-pressed={bandBps === b} onClick={() => setBandBps(b)}>±{(b / 100).toFixed(1)}%</button>)}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {!w ? (
           <button className="dx-cta" onClick={onConnect}>Connect wallet</button>
@@ -197,7 +213,7 @@ function SwapPanel({ w, acct, eoa, sqrtP, onConnect, onDone }: { w: Saved | null
         )}
       </section>
 
-      {last && <SwapResult a={last} protect={last.wallet === "kabuto"} lostKusd={lostKusd} price={price} />}
+      <AnimatePresence mode="popLayout">{last && <SwapResult key={last.id} a={last} protect={last.wallet === "kabuto"} lostKusd={lostKusd} price={price} />}</AnimatePresence>
     </div>
   );
 }
@@ -215,7 +231,7 @@ function SwapResult({ a, protect, lostKusd, price }: { a: Attempt; protect: bool
   else { tone = "bad"; title = "Did not complete"; body = a.error ?? ""; }
   const saved = protect && !pending && lostKusd !== null && (a.phase === "cancelled" || a.phase === "rejected" || (a.phase === "included" && (worse ?? 0) <= 0.0015));
   return (
-    <section className={`dx-result ${tone}`} aria-live="polite">
+    <motion.section layout {...pop} className={`dx-result ${tone}`} aria-live="polite">
       <div className="dx-result-h"><span className="dx-tag">{protect ? "Protected" : "Unprotected"}</span>{a.hash && <a href={txUrl(a.hash)} target="_blank" rel="noreferrer">{short(a.hash, 8)} ↗</a>}</div>
       <b>{title}</b>
       {body && <p>{body}</p>}
@@ -224,8 +240,8 @@ function SwapResult({ a, protect, lostKusd, price }: { a: Attempt; protect: bool
         <div><small>Received</small><span>{a.out !== undefined ? `${fmt(a.out, tout.decimals, 5)} ${tout.symbol}` : pending ? "…" : "—"}</span></div>
         <div><small>Gas</small><span>{a.gasWei !== undefined ? `${fmt(a.gasWei, 18, 6)} ETH` : "…"}</span></div>
       </div>
-      {saved && <div className="dx-saved"><small>You saved</small><b>{lostKusd!.toLocaleString("en-US", { maximumFractionDigits: 2 })} kUSD</b></div>}
-    </section>
+      <AnimatePresence>{saved && <motion.div className="dx-saved" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 18 }}><small>You saved</small><b>{lostKusd!.toLocaleString("en-US", { maximumFractionDigits: 2 })} kUSD</b></motion.div>}</AnimatePresence>
+    </motion.section>
   );
 }
 
@@ -278,7 +294,7 @@ function IntentsPanel({ w, acct, sqrtP, onConnect }: { w: Saved | null; acct: Ba
         {err && <div className="dx-err" role="alert">{err}</div>}
         {!w ? <button className="dx-cta" onClick={onConnect}>Connect wallet</button> : <button className="dx-cta" disabled={busy || !amountIn || insufficient} onClick={post}>{busy ? "Signing…" : insufficient ? "Not enough kUSD" : "Sign intent"}</button>}
       </section>
-      {posted.map((p) => <IntentCard key={p.id} p={p} events={events.filter((e) => e.intentId === p.id)} />)}
+      <AnimatePresence initial={false}>{posted.map((p) => <IntentCard key={p.id} p={p} events={events.filter((e) => e.intentId === p.id)} />)}</AnimatePresence>
     </div>
   );
 }
@@ -295,13 +311,13 @@ function IntentCard({ p, events }: { p: Posted; events: RelayEvent[] }) {
     { k: "Filled", on: !!landed, d: landed ? "filler paid gas" : "" },
   ];
   return (
-    <section className={`dx-result ${landed ? "good" : ""}`}>
+    <motion.section layout {...pop} className={`dx-result ${landed ? "good" : ""}`}>
       <div className="dx-result-h"><span className="dx-tag">{fmt(p.signed.intent.maxIn, tin.decimals, 0)} {tin.symbol} → {tout.symbol}</span>{landed?.hash && <a href={txUrl(landed.hash as Hex)} target="_blank" rel="noreferrer">{short(landed.hash, 8)} ↗</a>}</div>
-      <ol className="dx-track">{steps.map((s) => <li key={s.k} data-on={s.on}><i /><b>{s.k}</b><span>{s.d}</span></li>)}</ol>
+      <ol className="dx-track">{steps.map((s) => <li key={s.k} data-on={s.on}><motion.i animate={{ scale: s.on ? [1, 1.5, 1] : 1 }} transition={{ duration: 0.45 }} /><b>{s.k}</b><span>{s.d}</span></li>)}</ol>
       <div className="dx-kv">
         <div><small>Minimum</small><span>{fmt(p.signed.intent.startOut, tout.decimals, 5)} → {fmt(p.signed.intent.endOut, tout.decimals, 5)} {tout.symbol}</span></div>
         <div><small>Your gas</small><span>0 ETH</span></div>
       </div>
-    </section>
+    </motion.section>
   );
 }

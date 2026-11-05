@@ -140,3 +140,15 @@
   .dx-menu { position: fixed; left: 16px; right: 16px; top: 72px; width: auto; }
   .dx-saved b { font-size: 28px; }
 }
+
+/* motion */
+.dx-pane { width: 100%; display: flex; justify-content: center; }
+.dx-tabs button { position: relative; }
+.dx-tabs button[aria-selected="true"] { background: transparent; }
+.dx-tab-pill { position: absolute; inset: 0; border-radius: var(--r-pill); background: rgba(239, 234, 223, 0.1); }
+.dx-tab-l { position: relative; }
+.dx-switch i { transition: background .2s; }
+.dx-switch[aria-checked="true"] i { transform: none; }
+.dx-band { margin-top: 0; padding-top: 0; padding-bottom: 0; }
+.dx-band > * { margin-top: 8px; }
+.dx-track i { display: block; }
