@@ -50,7 +50,10 @@ if (scene === "attack") {
   await sleep(4000);
   await d.locator(".dx-switch").hover(); await sleep(600); await d.click(".dx-switch"); await sleep(1800);
   const on = await swap(d, "on");
-  await sleep(14000);
+  // keep both cameras rolling until the bot has published its report on this victim (BLOCKED / TOO SLOW)
+  await sleep(4000);
+  for (let i = 0; i < 90; i++) { const st = await fetch("https://kabuto-bot.201-18-198-162.sslip.io/status").then((r) => r.json()).catch(() => ({})); if (st.busy === false) break; await sleep(2000); }
+  await sleep(6000);
   await save(dexCtx, d, "attack-dex"); await save(termCtx, t, "attack-term");
   log("RESULT off:", /Sandwiched/.test(off), "on:", /blocked/.test(on));
 }
