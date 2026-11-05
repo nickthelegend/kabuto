@@ -286,3 +286,5 @@ a { color: inherit; }
 .seg.mini button { padding: 6px 10px; min-height: 34px; font-size: 13px; }
 .btn.moon-btn { background: var(--gold); color: #12110d; }
 code { font-family: var(--mono); font-size: .9em; }
+.ev-who img.av { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid var(--hair-2); }
+.brand img { border-radius: 9px; }

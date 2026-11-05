@@ -116,7 +116,7 @@ function Top({ chain, route }: { chain: ReturnType<typeof useChain>; route: "app
   return (
     <header className="top">
       <a className="brand" href="#/" aria-label="Kabuto home">
-        <img src="/kabuto.svg" alt="" />
+        <img src="/logo-128.png" alt="" />
         <div><b>Kabuto</b><br /><span>DEX · SDK · open intents</span></div>
       </a>
       {route === "home" && (
@@ -427,7 +427,7 @@ function AttemptRow({ a }: { a: Attempt }) {
   return (
     <li>
       <div className="ev-top">
-        <span className="ev-who"><i style={{ background: k ? "var(--shu)" : "var(--dim)" }} />{k ? "Kabuto" : "Normal wallet"}<span className="faint mono" style={{ fontWeight: 400, fontSize: 12 }}>{k ? `pin ±${((a.bandBps ?? 0) / 100).toFixed(2)}%` : `slippage ${((a.slippageBps ?? 0) / 100).toFixed(1)}%`}</span></span>
+        <span className="ev-who">{k ? <img className="av" src="/logo-128.png" alt="" /> : <i style={{ background: "var(--dim)" }} />}{k ? "Kabuto" : "Normal wallet"}<span className="faint mono" style={{ fontWeight: 400, fontSize: 12 }}>{k ? `pin ±${((a.bandBps ?? 0) / 100).toFixed(2)}%` : `slippage ${((a.slippageBps ?? 0) / 100).toFixed(1)}%`}</span></span>
         <span className={`chip ${tone}`}>{PHASES[a.phase]}</span>
       </div>
       <div className="ev-title">{title}</div>
@@ -456,7 +456,7 @@ function IntentRow({ p, events }: { p: PostedIntent; events: RelayEvent[] }) {
   return (
     <li>
       <div className="ev-top">
-        <span className="ev-who"><i style={{ background: "var(--gold)" }} />Open intent<span className="faint mono" style={{ fontWeight: 400, fontSize: 12 }}>nonce {String(p.signed.intent.nonce)}</span></span>
+        <span className="ev-who"><img className="av" src="/filler-a.jpg" alt="" />Open intent<span className="faint mono" style={{ fontWeight: 400, fontSize: 12 }}>nonce {String(p.signed.intent.nonce)}</span></span>
         <span className={`chip ${landed ? "ok" : "gold"}`}>{status}</span>
       </div>
       <div className="ev-title">{landed ? "A filler completed your intent and paid the gas." : "Signed, posted, no gas spent. Fillers are quoting it now."}</div>
@@ -483,7 +483,7 @@ function BotRow({ e }: { e: BotEvent }) {
   return (
     <li>
       <div className="ev-top">
-        <span className="ev-who"><i style={{ background: "var(--gold)" }} />Sandwich bot</span>
+        <span className="ev-who"><img className="av" src="/attacker.jpg" alt="" />Sandwich bot</span>
         {pnl !== null && !Number.isNaN(pnl) && <span className={`chip ${pnl < 0 ? "ok" : "shu"}`}>bot P&amp;L {pnl >= 0 ? "+" : ""}{pnl.toFixed(2)} kUSD</span>}
       </div>
       <div className="ev-title">{e.text}</div>
