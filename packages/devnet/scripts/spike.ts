@@ -35,7 +35,7 @@ async function setup() {
   await ensureFunded(deployer, parseEther("0.6"));
   await ensureFunded(bot, parseEther("0.1"));
   log("deploying kUSD (devnet test token), router");
-  const kusd = await deploy(deployerPk, "DevnetToken", ["Kabuto Devnet Dollar", "kUSD", 6]);
+  const kusd = await deploy(deployerPk, "DevnetToken", ["Kabuto Devnet Dollar", "kUSD", 6, parseUnits("1000", 6)]);
   const routerAddr = await deploy(deployerPk, "KabutoRouter", [PREDEPLOYS.poolManager]);
   const key0 = poolKey(PREDEPLOYS.weth, kusd);
   const wethIs0 = key0.currency0.toLowerCase() === PREDEPLOYS.weth.toLowerCase();

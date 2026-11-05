@@ -1,0 +1,27 @@
+{
+  "chainId": 1337,
+  "gateway": "https://altmempoolgateway.forshtat.com/rpc",
+  "ethrex": "https://altmempool.forshtat.com",
+  "explorer": "https://explorer.altmempool.wtf/",
+  "predeploys": {
+    "poolManager": "0x6bF9Aa9c04fd001385742d61f6818C3236429848",
+    "stateView": "0xd89a052862AaA34f0B6cc7f3B6a9D080584a43FB",
+    "weth": "0x1b7d32025F7cA633943BbCC9Ec61a98ef66187b6",
+    "usdc": "0xEFe0D421fD473564c9C9b0cDCeB194cF476D6AF5",
+    "permit2": "0x000000000022D473030F116dDEE9F6B43aC78BA3",
+    "stakingRegistry": "0xd51c04d7a0b01124e84de152f4e56d9eecb22d2f"
+  },
+  "kusd": "0x866fc51eafb778849e10552136d6e705f91307a7",
+  "router": "0x96cdb816a8be85b238ceb3f53a7334b7f74359be",
+  "poolKey": {
+    "currency0": "0x1b7d32025F7cA633943BbCC9Ec61a98ef66187b6",
+    "currency1": "0x866fc51eafb778849e10552136d6e705f91307a7",
+    "fee": 3000,
+    "tickSpacing": 60,
+    "hooks": "0x0000000000000000000000000000000000000000"
+  },
+  "poolId": "0xe87318c6b97d2b811c56b0adcfa096ee696b6f5b5969d1ffcd9be15a06b45fe8",
+  "wethIs0": true,
+  "deployedAt": "2026-11-05T16:19:39.561Z",
+  "block": 404274
+}
