@@ -13,6 +13,8 @@ mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({ headless: true });
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, recordVideo: { dir: out, size: { width: 1440, height: 900 } }, storageState: process.env.KABUTO_STATE });
 const page = await ctx.newPage();
+// fit the swap card and the live lane on one 1440x900 screen so nothing scrolls out of view
+if (process.env.ZOOM) await page.addInitScript((z) => { document.addEventListener("DOMContentLoaded", () => { document.documentElement.style.zoom = z; }); }, process.env.ZOOM);
 const pause = (ms) => page.waitForTimeout(ms);
 const smooth = (y) => page.evaluate((y) => window.scrollTo({ top: y, behavior: "smooth" }), y);
 
@@ -72,10 +74,19 @@ try {
     await page.getByRole("button", { name: /Same swap from a normal wallet/ }).click();
     await feedHas(/Filled .*worse|Filled at the quoted/);
     await pause(6000);
-    // 2. the same swap with Kabuto: the bot front-runs, the swap is never included, 0 gas
-    await page.getByRole("button", { name: "Swap with Kabuto" }).click();
-    await feedHas(/Never included|Refused at the door|Included\n/);
-    await pause(7000);
+    // 2. the same swap with Kabuto, started once the live bot is idle; every attempt stays in the footage
+    const botIdle = async () => { for (let i = 0; i < 90; i++) { try { const st = await (await fetch("http://localhost:8787/status")).json(); if (!st.busy) return; } catch {} await pause(1000); } };
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await botIdle();
+      await pause(3000);
+      const n = await page.locator(".feed > li", { hasText: "pin ±" }).count();
+      await page.getByRole("button", { name: "Swap with Kabuto" }).click();
+      await page.waitForFunction((n) => { const rows = [...document.querySelectorAll(".feed > li")].filter((x) => x.innerText.includes("pin ±")); return rows.length > n && /Included\n|Never included|Refused at the door|Failed/.test(rows[0].innerText); }, n, { timeout: 180_000 });
+      await pause(7000);
+      const top = await page.locator(".feed > li", { hasText: "pin ±" }).first().innerText();
+      console.log("kabuto attempt", attempt + 1, top.split("\n").slice(0, 4).join(" | "));
+      if (/Never included|Refused at the door/.test(top)) break;
+    }
     // 3. open intent: sign, a filler races and fills
     await page.getByText("Post an intent").first().click();
     await setAmount("300");

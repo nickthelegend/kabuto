@@ -1,0 +1,30 @@
+<template>
+  <style>
+    @font-face { font-family: "Urbanist"; src: url("assets/fonts/Urbanist.ttf"); font-weight: 100 900; }
+    @font-face { font-family: "Space Mono"; src: url("assets/fonts/SpaceMono-Regular.ttf"); }
+    #root { position: absolute; inset: 0; background: #06070c; overflow: hidden; }
+    #i-vid-wrap { position: absolute; inset: 0; }
+    #i-vid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 68% 40%; }
+    .i-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(6,7,12,.85) 0%, rgba(6,7,12,.35) 45%, rgba(6,7,12,0) 70%), linear-gradient(0deg, rgba(6,7,12,.7), transparent 40%); }
+    .i-wm { position: absolute; left: 140px; top: 360px; display: flex; font: 800 220px/1 "Urbanist"; letter-spacing: -.06em; color: #efeadf; }
+    .i-wm span { display: inline-block; }
+    .i-sub { position: absolute; left: 148px; top: 620px; font: 400 30px/1 "Space Mono"; letter-spacing: .14em; color: #ffe9b0; text-transform: uppercase; }
+    .i-line { position: absolute; left: 148px; top: 600px; width: 620px; height: 2px; background: linear-gradient(90deg, #ffe9b0, transparent); transform-origin: 0 50%; }
+  </style>
+  <div id="root" data-composition-id="intro3" data-width="1920" data-height="1080">
+    <div id="i-vid-wrap"><video id="i-vid" class="clip" data-start="0" data-duration="5" src="assets/footage/hero.mp4" muted playsinline></video></div>
+    <div class="i-shade"></div>
+    <div class="i-wm" id="i-wm"><span>K</span><span>a</span><span>b</span><span>u</span><span>t</span><span>o</span></div>
+    <div class="i-line" id="i-line"></div>
+    <div class="i-sub" id="i-sub">兜 · the helmet for your swaps</div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#i-vid-wrap", { scale: 1.12 }, { scale: 1, duration: 5, ease: "power2.out" }, 0)
+      .from("#i-wm span", { yPercent: 70, opacity: 0, filter: "blur(16px)", duration: 1.1, stagger: 0.07, ease: "expo.out" }, 0.5)
+      .from("#i-line", { scaleX: 0, duration: 0.9, ease: "power3.inOut" }, 1.4)
+      .from("#i-sub", { y: 14, opacity: 0, duration: 0.7, ease: "power3.out" }, 1.8)
+      .to(["#i-wm", "#i-sub", "#i-line"], { opacity: 0, y: -20, duration: 0.5, ease: "power2.in" }, 4.4);
+    window.__timelines["intro3"] = tl;
+  </script>
+</template>

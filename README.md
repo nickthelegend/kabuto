@@ -195,6 +195,20 @@ Full API: [packages/sdk/README.md](packages/sdk/README.md).
 | Live app runs (this README's top table) | Ordinary swap sandwiched; protected swap cancelled at 0 gas; intent filled by a VPS filler. |
 | Live sandwich bot (`packages/bot`) | Watches the public mempool and the alt-mempool, front-runs and back-runs real swaps, and records the realized loss vs the no-sandwich quote for every attempt. |
 
+## Arkiv intent board (Rabdi testnet)
+
+The relay can mirror verified, signed chain 1337 intents to Arkiv. Arkiv stores expiring listings and fill outcomes; all swaps still settle on the EIP-8141 devnet. Start the relay with a funded Rabdi writer in `ARKIV_PRIVATE_KEY`, or put an `"arkiv"` role in the JSON file at `KABUTO_KEYS_FILE`. `ARKIV_ACCESS_KEY` is optional. Configure `ARKIV_WRITER` for a filler using `--source arkiv`, and `VITE_ARKIV_WRITER` for the browser board. The default filler source remains the relay. `GET /arkiv` reports the writer, tGLM balance, publication count, and errors.
+
+**Writer addresses with published Kabuto entities:** none yet. The Rabdi writer has not been funded in this checkout, so the live write test is skipped. After funding and publishing, use the address returned by `GET /arkiv` here and in `ARKIV_WRITER` / `VITE_ARKIV_WRITER`. Do not use the separate, unfunded spike address as evidence of a write.
+
+Judge query on Rabdi (`https://rpc.rabdi.db-chain.testnet.arkiv.network`):
+
+```text
+arkiv.schema = str('kabuto.intent.v1') AND status = str('open') AND chainId = u64(1337)
+```
+
+The entity schema and Arkiv judging notes are in [`arkiv/schema.md`](arkiv/schema.md), [`arkiv/how-you-use-arkiv.md`](arkiv/how-you-use-arkiv.md), [`arkiv/why-arkiv.md`](arkiv/why-arkiv.md), [`arkiv/reach.md`](arkiv/reach.md), and [`arkiv/friction.md`](arkiv/friction.md). AI assistance was used to implement and review the Arkiv integration, test the SDK read path, and draft these notes; the repository's authors remain responsible for the code and claims.
+
 ## Where it runs
 
 | Piece | Host |

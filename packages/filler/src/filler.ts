@@ -6,6 +6,8 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { createKabuto, devnet1337, kabutoChain, explainRejection, type FillAttack, type SignedIntent } from '@kabuto/sdk';
 import { key } from '../../devnet/src/keys.js';
 import fillerArtifact from './filler-artifact.json';
+import { listOpenIntents } from './arkiv.js';
+import { validate } from './validation.js';
 
 const args=process.argv.slice(2);
 const opt=(name:string,defaultValue:string)=>{const i=args.indexOf(name);return i<0?defaultValue:args[i+1]??defaultValue;};
@@ -17,6 +19,10 @@ const minProfitBps=Number(opt('--minProfitBps','0'));
 const userShareBps=Number(opt('--userShareBps',name==='b'?'7500':'5000'));
 const tip=parseGwei(opt('--tipGwei',name==='b'?'2':'0.1'));
 const relayUrl=opt('--relay','http://127.0.0.1:8788');
+const source=opt('--source','relay');
+if(!['relay','arkiv'].includes(source))throw new Error('Use --source relay or --source arkiv');
+const arkivWriter=process.env.ARKIV_WRITER as Address|undefined;
+if(source==='arkiv'&&!arkivWriter)throw new Error('Set ARKIV_WRITER to the trusted relay writer address');
 if(!Number.isInteger(minProfitBps)||minProfitBps<0||!Number.isInteger(userShareBps)||userShareBps<0||userShareBps>10000)throw new Error('Invalid bps');
 const sdk=createKabuto();
 const pk=key(role),operator=privateKeyToAccount(pk).address;
@@ -68,8 +74,19 @@ async function processIntent(intentId:string,raw:any) {
   } catch(e) {const reason=explainRejection(e);if(!submittedHash)await report({type:'fill_refused',intentId,reason,filler,role,attack:attack||undefined}).catch(console.error);console.error(role,submittedHash?'still pending':'refused',intentId,reason);}
 }
 async function openIntents(){const r=await fetch(`${relayUrl}/intents`);if(!r.ok)throw new Error(`Relay GET /intents ${r.status}`);return await r.json() as Array<{intentId:string;signedIntent:unknown}>;}
-for(const x of await openIntents())void processIntent(x.intentId,x.signedIntent);
+async function arkivIntents(){
+  const rows=await listOpenIntents(arkivWriter!);
+  const checked=await Promise.allSettled(rows.map(async row=>({intentId:row.signedIntent.digest.toLowerCase(),signedIntent:await validate(row.signedIntent)})));
+  return checked.flatMap(result=>{if(result.status==='fulfilled')return [result.value];console.error(role,'Arkiv intent rejected',explainRejection(result.reason));return [];});
+}
+const sourceIntents=source==='arkiv'?arkivIntents:openIntents;
+for(const x of await sourceIntents())void processIntent(x.intentId,x.signedIntent);
 if(attack){console.log(role,'attack mode',attack);setTimeout(()=>process.exit(0),180_000);}
+else if(source==='arkiv'){
+  console.log(role,'polling Arkiv',arkivWriter);
+  let polling=false;
+  setInterval(()=>{if(polling)return;polling=true;void sourceIntents().then(xs=>Promise.all(xs.map(x=>processIntent(x.intentId,x.signedIntent)))).catch(e=>console.error(role,'Arkiv refresh',e)).finally(()=>{polling=false;});},2000);
+}
 else {
   setInterval(()=>{void openIntents().then(xs=>Promise.all(xs.map(x=>processIntent(x.intentId,x.signedIntent)))).catch(e=>console.error(role,'refresh',e));},5000);
   while(true){

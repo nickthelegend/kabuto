@@ -7,6 +7,8 @@ import { forget, load, onboard, shortError, STEPS, type Saved, type Step } from 
 import { kabutoSwap, normalSwap, type Attempt } from "./lib/swap";
 import { postIntent, relayEvents, signIntent, type RelayEvent, type SignedIntent } from "./lib/intent";
 import { tokenAbi } from "./lib/abi";
+import { ARKIV_WRITER, readArkivBoard, type BoardFill, type BoardIntent } from "./lib/arkiv";
+import { TOKENS } from "./lib/market";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import "./dex.css";
 
@@ -247,7 +249,7 @@ function SwapResult({ a, protect, loss }: { a: Attempt; protect: boolean; loss: 
   else if (a.phase === "included" && worse !== null && worse > 0.0015) { tone = "bad"; title = `Sandwiched · ${(worse * 100).toFixed(2)}% worse`; body = `Lost ${lostHere.toLocaleString("en-US", { maximumFractionDigits: 2 })} kUSD`; }
   else if (a.phase === "included") { tone = "good"; title = "Filled at your price"; }
   else { tone = "bad"; title = "Did not complete"; body = a.error ?? ""; }
-  const saved = protect && !pending && !!loss && loss.kusd > 0 && loss.side === a.side && loss.amountIn === a.amountIn && (a.phase === "cancelled" || a.phase === "rejected" || (a.phase === "included" && (worse ?? 0) <= 0.0015));
+  const saved = protect && !pending && !!loss && loss.kusd > 0 && loss.side === a.side && loss.amountIn === a.amountIn && (a.phase === "cancelled" || a.phase === "rejected"); // only when the swap was actually blocked
   return (
     <motion.section layout {...pop} className={`dx-result ${tone}`} aria-live="polite">
       <div className="dx-result-h"><span className="dx-tag">{protect ? "Protected" : "Unprotected"}</span>{a.hash && <a href={txUrl(a.hash)} target="_blank" rel="noreferrer">{short(a.hash, 8)} ↗</a>}</div>
@@ -312,8 +314,46 @@ function IntentsPanel({ w, acct, sqrtP, onConnect }: { w: Saved | null; acct: Ba
         {err && <div className="dx-err" role="alert">{err}</div>}
         {!w ? <button className="dx-cta" onClick={onConnect}>Connect wallet</button> : <button className="dx-cta" disabled={busy || !amountIn} onClick={insufficient ? async () => { setBusy(true); try { await mintKusd(w, w.account!, amountIn!); } finally { setBusy(false); } } : post}>{busy ? (insufficient ? "Minting test kUSD…" : "Signing…") : insufficient ? "Get test kUSD" : "Sign intent"}</button>}
       </section>
+      <ArkivBoard />
       <AnimatePresence initial={false}>{posted.map((p) => <IntentCard key={p.id} p={p} events={events.filter((e) => e.intentId === p.id)} />)}</AnimatePresence>
     </div>
+  );
+}
+
+function ArkivBoard() {
+  const [intents, setIntents] = useState<BoardIntent[]>([]);
+  const [fills, setFills] = useState<BoardFill[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  useEffect(() => {
+    if (!ARKIV_WRITER) return;
+    let alive = true;
+    const refresh = () => { void readArkivBoard().then(board => { if (alive) { setIntents(board.intents); setFills(board.fills); setError(null); setNow(Math.floor(Date.now() / 1000)); } }).catch(e => { if (alive) setError(shortError(e)); }); };
+    refresh(); const timer = setInterval(refresh, 4000);
+    return () => { alive = false; clearInterval(timer); };
+  }, []);
+  if (!ARKIV_WRITER) return null; // the board appears once a funded Arkiv writer is configured (see README)
+  const token = (address: string) => Object.values(TOKENS).find(t => t.address.toLowerCase() === address.toLowerCase());
+  return (
+    <section className="dx-result" aria-label="Arkiv intent board">
+      <div className="dx-result-h"><span className="dx-tag">Arkiv board</span><span className="dx-pill">Rabdi</span></div>
+      {!ARKIV_WRITER ? <p>Arkiv board: setup required</p> : error ? <p role="alert">{error}</p> : null}
+      {ARKIV_WRITER && !error && <>
+        <div className="dx-kv"><div><small>Open intents</small><span>{intents.length}</span></div></div>
+        {intents.map(row => { const i = row.signed.intent; const tIn = token(i.tokenIn), tOut = token(i.tokenOut); return (
+          <div className="dx-kv" key={row.entityKey}>
+            <div><small>Amount</small><span>{tIn ? fmt(i.maxIn, tIn.decimals, 4) : i.maxIn.toString()} {tIn?.symbol ?? short(i.tokenIn)} → {tOut?.symbol ?? short(i.tokenOut)}</span></div>
+            <div><small>Deadline</small><span>{Math.max(0, Number(row.deadline) - now)}s</span></div>
+            <div><small>Entity</small><a href={`https://rabdi.explorer.arkiv.network/entity/${row.entityKey}`} target="_blank" rel="noreferrer">{short(row.entityKey, 10)} ↗</a></div>
+          </div>
+        ); })}
+        <div className="dx-kv"><div><small>Recent fills</small><span>{fills.length}</span></div></div>
+        {fills.map(fill => <div className="dx-kv" key={fill.entityKey}>
+          <div><small>Outcome</small><span>{fill.outcome}</span></div>
+          <div><small>1337 tx</small>{fill.txHash ? <a href={`https://explorer.altmempool.wtf/tx/${fill.txHash}`} target="_blank" rel="noreferrer">{short(fill.txHash, 10)} ↗</a> : <span>—</span>}</div>
+        </div>)}
+      </>}
+    </section>
   );
 }
 
