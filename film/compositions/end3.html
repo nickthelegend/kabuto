@@ -1,0 +1,22 @@
+<template>
+  <style>
+    @font-face { font-family: "Urbanist"; src: url("assets/fonts/Urbanist.ttf"); font-weight: 100 900; }
+    @font-face { font-family: "Space Mono"; src: url("assets/fonts/SpaceMono-Regular.ttf"); }
+    #root { position: absolute; inset: 0; background: radial-gradient(800px 800px at 50% 55%, rgba(255,233,176,.16), rgba(255,233,176,.03) 55%, transparent 70%), #06070c; overflow: hidden; color: #efeadf; text-align: center; }
+    .e-wm { position: absolute; left: 0; right: 0; top: 300px; font: 800 200px/1 "Urbanist"; letter-spacing: -.06em; }
+    .e-l { position: absolute; left: 0; right: 0; top: 540px; font: 700 54px/1.1 "Urbanist"; letter-spacing: -.02em; color: #ffe9b0; }
+    .e-links { position: absolute; left: 0; right: 0; top: 700px; font: 400 28px/1.8 "Space Mono"; color: #b9b4cc; }
+  </style>
+  <div id="root" data-composition-id="end3" data-width="1920" data-height="1080">
+    <div class="e-wm" id="e-wm">Kabuto</div>
+    <div class="e-l" id="e-l">Swap at your price. Or not at all.</div>
+    <div class="e-links" id="e-links">kabuto-self.vercel.app<br />github.com/nickthelegend/kabuto<br />EIP-8141 · ERC-8421 · Uniswap v4</div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.from("#e-wm", { scale: 0.9, opacity: 0, filter: "blur(12px)", duration: 1, ease: "expo.out" }, 0.2)
+      .from("#e-l", { y: 20, opacity: 0, duration: 0.7, ease: "power3.out" }, 0.8)
+      .from("#e-links", { y: 20, opacity: 0, duration: 0.7, ease: "power3.out" }, 1.3);
+    window.__timelines["end3"] = tl;
+  </script>
+</template>
