@@ -9,6 +9,8 @@ export const PROOF: Proof[] = [
   { what: "Swap pays its own gas (Kabuto paymaster)", result: "Mined, 5/5 frames; account ETH moved 0 wei", hash: "0x7559cff5fa0398cc452800c66261f03c90bf9925164f5e4c51628c4eef707cde", tone: "ok" },
   { what: "Open intent filled by a third-party filler", result: "Mined, 5/5 frames; filler paid gas, account got its minimum", hash: "0xefebea6a0a5c7b3e75229c5a9980ee823cd1273945e036a897d12f00fb38cce3", tone: "ok" },
   { what: "Filler underpays the intent", result: "Settle frame failed, batch rolled back, user lost nothing", hash: "0xb0a236ccb9451dcefe266fb3f1db4d12a72b86d1b21fa832fa0c4fac11685e64", tone: "shu" },
+  { what: "KabutoGuard v4 pool: price-pinned frame-tx swap", result: "Mined; the hook found the VERIFY price pin and let it trade", hash: "0xd1962486165f1c4afdf3aec80ad6f2c6f882063403ad81e8469165e68472f861", tone: "ok" },
+  { what: "KabutoGuard v4 pool: a plain transaction tries to swap", result: "Reverted NotFrameTx(): a sandwich bot's transaction can't trade here", hash: "0x8fd351e2cffefc53e3680916bdb4007f24cbbc9b601ae37b13a80287e3291829", tone: "shu" },
   { what: "Owner key on the native P256 signature scheme", result: "Mined, 2/2 frames", hash: "0xfe70566620a7e2798002ea376b598d7a6614fee279c861b2cc6146978178b7d3", tone: "ok" },
 ];
 
