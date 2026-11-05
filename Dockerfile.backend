@@ -1,0 +1,21 @@
+# Kabuto backend services (intent relay, reference filler, sandwich bot, fallback devnet faucet).
+# One image, four compose services. Devnet-only keys are generated inside the containers on first start
+# (KABUTO_KEYS_FILE in a volume); nothing secret is baked into the image.
+FROM node:22-slim
+ENV NODE_ENV=production
+WORKDIR /app
+COPY deployments ./deployments
+COPY packages/contracts/out ./packages/contracts/out
+COPY packages/devnet ./packages/devnet
+COPY packages/sdk ./packages/sdk
+COPY packages/filler ./packages/filler
+COPY packages/bot ./packages/bot
+COPY packages/faucet ./packages/faucet
+# Each package installs on its own (no pnpm workspace in the image); the filler points at the local SDK.
+RUN cd packages/devnet && npm install --no-audit --no-fund --include=dev \
+ && cd ../sdk && npm install --no-audit --no-fund --include=dev && npm run build \
+ && cd ../filler && sed -i 's#"@kabuto/sdk":"workspace:\*"#"@kabuto/sdk":"file:../sdk"#' package.json && npm install --no-audit --no-fund --include=dev \
+ && cd ../bot && npm install --no-audit --no-fund --include=dev \
+ && cd ../faucet && npm install --no-audit --no-fund --include=dev \
+ && npm cache clean --force
+RUN mkdir -p /keys /app/packages/filler/data /app/packages/bot/data

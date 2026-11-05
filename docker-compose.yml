@@ -1,0 +1,89 @@
+# Lightweight hackathon-demo deployment on the VPS behind Coolify's Traefik (network "coolify").
+# Redeploy: cd /opt/hk/kabuto && docker compose up -d --build
+# Devnet only (EIP-8141 alt-mempool devnet, chain 1337). Each service generates its own throwaway devnet key on
+# first start in the "keys" volume (mode 600); fund those addresses with devnet ETH. No real-money keys anywhere.
+# The services send their own permissive CORS headers (public, read-mostly devnet APIs), so no Traefik CORS middleware.
+x-common: &common
+  build: { context: ., dockerfile: Dockerfile.backend }
+  image: hk-kabuto:latest
+  restart: unless-stopped
+  networks: [coolify]
+  environment: &env
+    KABUTO_GATEWAY: https://altmempool.forshtat.com/rpc
+services:
+  relay:
+    <<: *common
+    working_dir: /app/packages/filler
+    command: ["npx", "tsx", "src/relay.ts"]
+    mem_limit: 192m
+    environment: { <<: *env, PORT: "8788" }
+    volumes: [relay-data:/app/packages/filler/data]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8788/intents').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.hk-kabuto-relay.rule=Host(`kabuto-relay.201-18-198-162.sslip.io`)
+      - traefik.http.routers.hk-kabuto-relay.entrypoints=https
+      - traefik.http.routers.hk-kabuto-relay.tls=true
+      - traefik.http.routers.hk-kabuto-relay.tls.certresolver=letsencrypt
+      - traefik.http.services.hk-kabuto-relay.loadbalancer.server.port=8788
+  filler:
+    <<: *common
+    working_dir: /app/packages/filler
+    command: ["npx", "tsx", "src/filler.ts", "--name", "a", "--relay", "http://relay:8788"]
+    mem_limit: 256m
+    environment: { <<: *env, KABUTO_KEYS_FILE: /keys/filler.json }
+    volumes: [keys:/keys, filler-data:/app/packages/filler/data]
+    depends_on: [relay]
+  bot:
+    <<: *common
+    working_dir: /app/packages/bot
+    command: ["npx", "tsx", "src/main.ts"]
+    mem_limit: 256m
+    environment: { <<: *env, KABUTO_KEYS_FILE: /keys/bot.json, BOT_MAX_WETH: "0.02", BOT_MAX_KUSD: "1500" }
+    volumes: [keys:/keys, bot-data:/app/packages/bot/data]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8787/status').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.hk-kabuto-bot.rule=Host(`kabuto-bot.201-18-198-162.sslip.io`)
+      - traefik.http.routers.hk-kabuto-bot.entrypoints=https
+      - traefik.http.routers.hk-kabuto-bot.tls=true
+      - traefik.http.routers.hk-kabuto-bot.tls.certresolver=letsencrypt
+      - traefik.http.services.hk-kabuto-bot.loadbalancer.server.port=8787
+  faucet:
+    <<: *common
+    working_dir: /app/packages/faucet
+    command: ["npx", "tsx", "faucet.ts"]
+    mem_limit: 160m
+    environment: { <<: *env, KABUTO_KEYS_FILE: /keys/faucet.json, PORT: "8789", DRIP_ETH: "0.06", MAX_DRIPS: "60" }
+    volumes: [keys:/keys]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8789/status').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.hk-kabuto-faucet.rule=Host(`kabuto-faucet.201-18-198-162.sslip.io`)
+      - traefik.http.routers.hk-kabuto-faucet.entrypoints=https
+      - traefik.http.routers.hk-kabuto-faucet.tls=true
+      - traefik.http.routers.hk-kabuto-faucet.tls.certresolver=letsencrypt
+      - traefik.http.services.hk-kabuto-faucet.loadbalancer.server.port=8789
+volumes:
+  keys:
+  relay-data:
+  filler-data:
+  bot-data:
+networks:
+  coolify:
+    external: true

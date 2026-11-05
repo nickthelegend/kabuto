@@ -5,18 +5,24 @@
  *   POST /drip {"address":"0x…"}  ->  {"hash":"0x…"}      GET /status -> {address, balance, drips}
  */
 import { createServer } from "node:http";
-import { readFileSync } from "node:fs";
+import { chmodSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createPublicClient, createWalletClient, defineChain, formatEther, http, isAddress, parseEther, type Hex } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 const GATEWAY = process.env.KABUTO_GATEWAY ?? "https://altmempool.forshtat.com/rpc";
 const DRIP = parseEther(process.env.DRIP_ETH ?? "0.06");
 const MAX_DRIPS = Number(process.env.MAX_DRIPS ?? 40);
 const PORT = Number(process.env.PORT ?? 8789);
 const chain = defineChain({ id: 1337, name: "EIP-8141 devnet", nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: [GATEWAY] } } });
-const keys = JSON.parse(readFileSync(fileURLToPath(new URL("../devnet/.devnet-keys.json", import.meta.url)), "utf8")) as Record<string, Hex>;
-if (!keys["kabuto-faucet"]) throw new Error('No "kabuto-faucet" key in packages/devnet/.devnet-keys.json. Create it with key("kabuto-faucet") and fund it.');
+// The fallback faucet's own devnet key: created on first start (mode 600) where it runs, never copied from elsewhere.
+const KEYS_FILE = process.env.KABUTO_KEYS_FILE ?? fileURLToPath(new URL("../devnet/.devnet-keys.json", import.meta.url));
+const keys = (existsSync(KEYS_FILE) ? JSON.parse(readFileSync(KEYS_FILE, "utf8")) : {}) as Record<string, Hex>;
+if (!keys["kabuto-faucet"]) {
+  keys["kabuto-faucet"] = generatePrivateKey();
+  writeFileSync(KEYS_FILE, JSON.stringify(keys, null, 2));
+  chmodSync(KEYS_FILE, 0o600);
+}
 const account = privateKeyToAccount(keys["kabuto-faucet"]);
 const pub = createPublicClient({ chain, transport: http(GATEWAY) });
 const wallet = createWalletClient({ account, chain, transport: http(GATEWAY) });

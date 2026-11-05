@@ -1,0 +1,17 @@
+**/node_modules
+**/dist
+**/.devnet-keys.json
+**/.devnet-state.json
+**/data/*.jsonl
+packages/filler/data/*.json
+packages/app
+packages/e2e
+packages/replay
+packages/demo
+packages/contracts/lib
+packages/contracts/cache
+packages/contracts/test
+film
+assets
+.pnpm-store
+.git
