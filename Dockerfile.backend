@@ -14,7 +14,7 @@ COPY packages/faucet ./packages/faucet
 # Each package installs on its own (no pnpm workspace in the image); the filler points at the local SDK.
 RUN cd packages/devnet && npm install --no-audit --no-fund --include=dev \
  && cd ../sdk && npm install --no-audit --no-fund --include=dev && npm run build \
- && cd ../filler && sed -i 's#"@kabuto/sdk":"workspace:\*"#"@kabuto/sdk":"file:../sdk"#' package.json && npm install --no-audit --no-fund --include=dev \
+ && cd ../filler && sed -i -E 's#"@kabuto/sdk": *"workspace:\*"#"@kabuto/sdk": "file:../sdk"#' package.json && npm install --no-audit --no-fund --include=dev \
  && cd ../bot && npm install --no-audit --no-fund --include=dev \
  && cd ../faucet && npm install --no-audit --no-fund --include=dev \
  && npm cache clean --force
