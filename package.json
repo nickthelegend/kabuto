@@ -1,0 +1,6 @@
+{
+  "name": "kabuto",
+  "private": true,
+  "license": "MIT",
+  "packageManager": "pnpm@9.15.0"
+}

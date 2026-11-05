@@ -1,0 +1,11 @@
+node_modules/
+out/
+cache/
+.env
+.env.*
+.devnet-keys.json
+.devnet-state.json
+dist/
+.next/
+.DS_Store
+packages/contracts/lib/
