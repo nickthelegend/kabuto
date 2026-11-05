@@ -6,6 +6,7 @@ import { balances, bandFor, fmt, priceFromSqrt, quote, sqrtPrice, tokenIn, token
 import { forget, load, onboard, STEPS, type Saved, type Step } from "./lib/wallet";
 import { kabutoSwap, normalSwap, type Attempt } from "./lib/swap";
 import { registryAbi } from "./lib/abi";
+import { Landing } from "./Landing";
 
 const short = (a?: string, n = 6) => (a ? `${a.slice(0, n)}…${a.slice(-4)}` : "");
 const explorerTx = (h?: string) => (h ? `${D.explorer}tx/${h}` : D.explorer);
@@ -60,34 +61,58 @@ function toBotEvent(d: any): BotEvent {
 }
 
 /* ------------------------------------------------------------------ app */
+function useRoute() {
+  const [hash, setHash] = useState(() => location.hash);
+  useEffect(() => {
+    const on = () => { setHash(location.hash); if (location.hash.startsWith("#/")) window.scrollTo(0, 0); };
+    window.addEventListener("hashchange", on);
+    return () => window.removeEventListener("hashchange", on);
+  }, []);
+  return hash.startsWith("#/app") ? "app" : "home";
+}
+
 export function App() {
   const [wallet, setWallet] = useState<Saved | null>(() => load());
+  const route = useRoute();
   const chain = useChain();
   const ready = !!wallet?.account && !!wallet.staked;
   return (
     <div className="shell">
-      <Top chain={chain} />
-      <div className="hatch" aria-hidden />
-      {ready ? <Wallet w={wallet!} chain={chain} onReset={() => { forget(); setWallet(null); }} /> : <Onboarding onDone={setWallet} />}
+      <Top chain={chain} route={route} />
+      {route === "home" ? (
+        <Landing />
+      ) : ready ? (
+        <Wallet w={wallet!} chain={chain} onReset={() => { forget(); setWallet(null); }} />
+      ) : (
+        <Onboarding onDone={setWallet} />
+      )}
       <footer className="foot">
-        <span>Kabuto runs on the public EIP-8141 / ERC-8421 alt-mempool devnet (chain 1337). Keys live in this browser and are for the devnet only.</span>
+        <span>Kabuto DEX runs on the Ethereum Foundation's public EIP-8141 / ERC-8421 alt-mempool devnet (chain 1337) with Uniswap v4. Keys stay in this browser and are for the devnet only.</span>
         <span><a href="https://github.com/nickthelegend/kabuto" target="_blank" rel="noreferrer">Source (MIT)</a> · <a href={D.explorer} target="_blank" rel="noreferrer">Explorer</a></span>
       </footer>
     </div>
   );
 }
 
-function Top({ chain }: { chain: ReturnType<typeof useChain> }) {
+function Top({ chain, route }: { chain: ReturnType<typeof useChain>; route: "app" | "home" }) {
   return (
     <header className="top">
-      <a className="brand" href="/" aria-label="Kabuto home">
+      <a className="brand" href="#/" aria-label="Kabuto home">
         <img src="/kabuto.svg" alt="" />
-        <div><b>Kabuto</b><br /><span>unsandwichable wallet</span></div>
+        <div><b>Kabuto</b><br /><span>DEX · SDK · open intents</span></div>
       </a>
+      {route === "home" && (
+        <nav className="nav-links" aria-label="Sections">
+          <a href="#how">How it works</a>
+          <a href="#security">Security</a>
+          <a href="#proof">Proof</a>
+          <a href="#sdk">SDK</a>
+        </nav>
+      )}
       <div className="net" aria-live="polite">
         <i className={`dot ${chain.online ? "" : "off"}`} aria-hidden />
-        <span className="hide-sm">{chain.online ? "EIP-8141 devnet · 1337" : "Devnet unreachable"}</span>
-        <a href={D.explorer} target="_blank" rel="noreferrer">#{chain.block?.toString() ?? "…"}</a>
+        <a className="hide-sm" href={D.explorer} target="_blank" rel="noreferrer">#{chain.block?.toString() ?? "…"}</a>
+        {route === "home" ? <a className="btn-moon sm" href="#/app">Open DEX</a> : <a className="btn-line sm" href="#/">Home</a>}
       </div>
     </header>
   );
@@ -110,8 +135,8 @@ function Onboarding({ onDone }: { onDone: (w: Saved) => void }) {
   return (
     <section className="hero">
       <div>
-        <div className="kicker">EIP-8141 frame transactions · Uniswap v4</div>
-        <h1>A wallet a sandwich bot <em>can't touch.</em></h1>
+        <div className="kicker">Kabuto DEX · one-time setup</div>
+        <h1>Set up once, then <em>swap at your price.</em></h1>
         <p className="lede">
           Every Kabuto swap carries a price check inside the transaction's own validation frame. If a bot moves the pool before your swap lands,
           the swap stops being a valid transaction: it is never included, the bot is left holding its trade, and you pay nothing.
@@ -123,7 +148,7 @@ function Onboarding({ onDone }: { onDone: (w: Saved) => void }) {
         </div>
       </div>
       <div className="card onb">
-        <div className="card-h"><h2>Create your wallet</h2><span className="chip">devnet</span></div>
+        <div className="card-h"><h2>Create your Kabuto account</h2><span className="chip">devnet</span></div>
         <div className="card-b">
           <ol>
             {steps.map((s, i) => (
@@ -138,7 +163,7 @@ function Onboarding({ onDone }: { onDone: (w: Saved) => void }) {
             ))}
           </ol>
           {err && <div className="err" role="alert">{err} <br />The faucet allows one drip per address per hour; if it refused, try again later.</div>}
-          <button className="btn" onClick={start} disabled={busy}>{busy ? "Setting up on the devnet…" : resumable ? "Resume setup" : "Create my Kabuto wallet"}</button>
+          <button className="btn" onClick={start} disabled={busy}>{busy ? "Setting up on the devnet…" : resumable ? "Resume setup" : "Create my Kabuto account"}</button>
           <p className="hint">Takes about a minute. Every step is a real transaction on the public devnet; nothing is simulated.</p>
         </div>
       </div>
