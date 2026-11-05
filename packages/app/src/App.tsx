@@ -8,6 +8,7 @@ import { kabutoSwap, normalSwap, type Attempt } from "./lib/swap";
 import { registryAbi, tokenAbi } from "./lib/abi";
 import { sendLegacy } from "./lib/chain";
 import { encodeFunctionData } from "viem";
+import { Dex } from "./Dex";
 import { Landing } from "./Landing";
 import { postIntent, relayEvents, signIntent, type RelayEvent, type SignedIntent } from "./lib/intent";
 
@@ -94,8 +95,13 @@ function useRoute() {
 }
 
 export function App() {
-  const [wallet, setWallet] = useState<Saved | null>(() => load());
   const route = useRoute();
+  return route === "app" ? <Dex /> : <Home />;
+}
+
+function Home() {
+  const [wallet, setWallet] = useState<Saved | null>(() => load());
+  const route = "home" as "home" | "app";
   const chain = useChain();
   const ready = !!wallet?.account && !!wallet.staked;
   return (
@@ -119,22 +125,16 @@ export function App() {
 function Top({ chain, route }: { chain: ReturnType<typeof useChain>; route: "app" | "home" }) {
   return (
     <header className="top">
-      <a className="brand" href="#/" aria-label="Kabuto home">
-        <img src="/logo-128.png" alt="" />
-        <div><b>Kabuto</b><br /><span>DEX · SDK · open intents</span></div>
-      </a>
+      <a className="brand" href="#/" aria-label="Kabuto home"><b>Kabuto</b></a>
       {route === "home" && (
         <nav className="nav-links" aria-label="Sections">
           <a href="#how">How it works</a>
-          <a href="#security">Security</a>
-          <a href="#proof">Proof</a>
           <a href="#sdk">SDK</a>
+          <a href="#proof">Proof</a>
         </nav>
       )}
       <div className="net" aria-live="polite">
-        <i className={`dot ${chain.online ? "" : "off"}`} aria-hidden />
-        <a className="hide-sm" href={D.explorer} target="_blank" rel="noreferrer">#{chain.block?.toString() ?? "…"}</a>
-        {route === "home" ? <a className="btn-moon sm" href="#/app">Open DEX</a> : <a className="btn-line sm" href="#/">Home</a>}
+        {route === "home" ? <a className="btn-moon sm" href="#/app">Launch app</a> : <a className="btn-line sm" href="#/">Home</a>}
       </div>
     </header>
   );
