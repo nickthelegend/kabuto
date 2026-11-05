@@ -1,6 +1,6 @@
 {
   "chainId": 1337,
-  "gateway": "https://altmempoolgateway.forshtat.com/rpc",
+  "gateway": "https://altmempool.forshtat.com/rpc",
   "ethrex": "https://altmempool.forshtat.com",
   "explorer": "https://explorer.altmempool.wtf/",
   "predeploys": {

@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import { createPublicClient, createWalletClient, defineChain, formatEther, http, isAddress, parseEther, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-const GATEWAY = "https://altmempoolgateway.forshtat.com/rpc";
+const GATEWAY = process.env.KABUTO_GATEWAY ?? "https://altmempool.forshtat.com/rpc";
 const DRIP = parseEther(process.env.DRIP_ETH ?? "0.06");
 const MAX_DRIPS = Number(process.env.MAX_DRIPS ?? 40);
 const PORT = Number(process.env.PORT ?? 8789);

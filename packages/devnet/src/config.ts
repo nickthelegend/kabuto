@@ -1,7 +1,7 @@
 import { defineChain, type Address } from "viem";
 
 /** The public EIP-8141 / ERC-8421 alt-mempool devnet (forshtat/mempool-workshop-sidecar, devnet-readme section 8). */
-export const GATEWAY = "https://altmempoolgateway.forshtat.com/rpc";
+export const GATEWAY = process.env.KABUTO_GATEWAY ?? "https://altmempool.forshtat.com/rpc";
 export const EXPLORER = "https://explorer.altmempool.wtf/";
 
 export const devnet = defineChain({

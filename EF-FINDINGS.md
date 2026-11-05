@@ -16,6 +16,8 @@ What we verified on the public alt-mempool devnet (chain 1337, gateway `altmempo
 
 ## Friction and suggestions
 
+0. **Nov 6, ~00:00 IST: the gateway lost its gossip peer.** `skandha_connectedPeers` on `altmempoolgateway.forshtat.com/rpc` returned `[]` while its pool grew to 28 entries stuck at `New` (ours and other teams'). The miner's own sidecar (`altmempool.forshtat.com/rpc`) had its own, nearly empty pool. Submitting directly to the miner's sidecar included our intent fill within seconds. Kabuto now uses the miner endpoint; a health line in the explorer for "gateway peers: 0" would have saved an hour.
+
 1. **`MAX_VERIFY_GAS` is the sum over the whole validation prefix, plus 2,800 per signature.** Two VERIFY frames and two signatures leave about 94k for real logic. The error message is clear (`validation prefix execution gas sum … exceeds MAX_VERIFY_GAS`); the README of the workshop could state the per-signature cost up front.
 2. **`skandha_frameTransactionStatus` lags the explorer record.** We saw `New` from `skandha_frameTransactionStatus` while `skandha_explorer_getTransaction` already said `OnChain`. We poll the explorer record first.
 3. **Contract creation costs state gas.** `eth_estimateGas` then ×2 worked every time; a fixed 6M limit sometimes did not (3 KB contract out of gas at 6,000,000).
