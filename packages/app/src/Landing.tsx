@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { D } from "./lib/config";
 import { pub } from "./lib/chain";
 import { priceFromSqrt, sqrtPrice } from "./lib/market";
-import { PROOF, REFUSED } from "./lib/proof";
+import { PROOF, REFUSED, REPLAY } from "./lib/proof";
 
 const short = (h: string, n = 8) => `${h.slice(0, n)}…${h.slice(-4)}`;
 const tx = (h: string) => `${D.explorer}tx/${h}`;
@@ -123,6 +123,13 @@ export function Landing() {
           <div className="fcard"><small>WETH / kUSD on Uniswap v4</small><b className="mono">{live.price !== null ? live.price.toLocaleString("en-US", { maximumFractionDigits: 2 }) : "…"}</b></div>
           <div className="fcard shu"><small>Sandwiched swap</small><b>Cancelled · 0 gas</b><a className="mono" href={tx(PROOF[2].hash)} target="_blank" rel="noreferrer">{short(PROOF[2].hash)}</a></div>
         </div>
+      </section>
+
+      <section className="l-stats" aria-label="Mainnet sandwiches">
+        <div><b>{REPLAY.uniqueVictims}</b><span>Uniswap v4 swaps on mainnet sandwiched by the same sender in {REPLAY.hours} hours</span></div>
+        <div><b className="moon">{Math.round((REPLAY.stopped / REPLAY.evaluated) * 100)}%</b><span>would have been impossible with a ±{REPLAY.bandPct}% Kabuto pin</span></div>
+        <div><b>0</b><span>gas a Kabuto swap pays when the price moves against it</span></div>
+        <p className="fine">Blocks {REPLAY.fromBlock.toLocaleString()}–{REPLAY.toBlock.toLocaleString()} ({REPLAY.fromIso} → {REPLAY.toIso}). Heuristic, read-only scan of PoolManager Swap logs; method and caveats in packages/replay/METHOD.md.</p>
       </section>
 
       <section className="l-sec" id="how">

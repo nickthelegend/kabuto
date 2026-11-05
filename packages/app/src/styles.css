@@ -297,3 +297,9 @@ code { font-family: var(--mono); font-size: .9em; }
   .l-hero .lede { font-size: 16px; }
   .top .brand span { display: none; }
 }
+.l-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin-top: 20px; background: var(--hair); border: 1px solid var(--hair); border-radius: var(--r-card); overflow: hidden; }
+.l-stats > div { background: var(--frame); padding: 26px 24px; }
+.l-stats b { display: block; font: 700 clamp(40px, 5vw, 64px)/1 var(--sans); letter-spacing: -0.03em; }
+.l-stats span { display: block; margin-top: 10px; color: var(--mist); font-size: 15px; line-height: 1.45; }
+.l-stats .fine { grid-column: 1 / -1; margin: 0; padding: 12px 24px; background: var(--frame); color: var(--faint); font-size: 12.5px; }
+@media (max-width: 760px) { .l-stats { grid-template-columns: minmax(0, 1fr); } }

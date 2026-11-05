@@ -17,3 +17,13 @@ export const REFUSED = [
   { attack: "Drop the atomic flag so the transfer survives a failed settlement", code: "BadIntentShape(7)" },
   { attack: "Swap after the pool price left the signed band", code: "PriceOutOfBand" },
 ];
+
+/**
+ * From packages/replay/out (read-only scan of Uniswap v4 PoolManager Swap logs on Ethereum mainnet). Counts only
+ * triples whose front and back legs share tx.from (the stricter rule); see packages/replay/METHOD.md for the
+ * heuristic and its false-positive/negative risks. No dollar figure: USD coverage was ~1% of pools.
+ */
+export const REPLAY = {
+  fromBlock: 26299825, toBlock: 26307824, fromIso: "2026-10-29T17:14Z", toIso: "2026-10-30T20:00Z", hours: 27,
+  sameSenderTriples: 503, uniqueVictims: 497, evaluated: 501, stopped: 388, bandPct: 0.5,
+};
