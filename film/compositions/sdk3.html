@@ -1,0 +1,31 @@
+<template>
+  <style>
+    @font-face { font-family: "Urbanist"; src: url("assets/fonts/Urbanist.ttf"); font-weight: 100 900; }
+    @font-face { font-family: "Space Mono"; src: url("assets/fonts/SpaceMono-Regular.ttf"); }
+    #root { position: absolute; inset: 0; background: radial-gradient(900px 600px at 80% 70%, rgba(255,233,176,.07), transparent 60%), #06070c; overflow: hidden; color: #efeadf; }
+    .s-tag { position: absolute; left: 140px; top: 210px; font: 400 24px/1 "Space Mono"; letter-spacing: .16em; color: #9b98a8; }
+    .s-h { position: absolute; left: 140px; top: 256px; font: 800 104px/.95 "Urbanist"; letter-spacing: -.05em; }
+    .s-h em { font-style: normal; color: #ffe9b0; }
+    .code { position: absolute; left: 140px; right: 140px; top: 540px; padding: 40px 48px; border-radius: 32px; background: #0c0d15; border: 1px solid rgba(239,234,223,.12); font: 400 30px/1.75 "Space Mono"; color: #cfc9bb; white-space: pre; }
+    .code .k { color: #ffe9b0; } .code .c { color: #6c6a78; } .code .hl { color: #fff; background: rgba(255,233,176,.12); border-radius: 8px; padding: 0 6px; }
+    .ln { display: block; }
+  </style>
+  <div id="root" data-composition-id="sdk3" data-width="1920" data-height="1080">
+    <div class="s-tag" id="s-tag">@kabuto/sdk</div>
+    <div class="s-h" id="s-h">Any wallet.<br /><em>One call.</em></div>
+    <div class="code" id="code"><span class="ln" id="l1"><span class="k">const</span> kabuto = createKabuto({ deployment: devnet1337 });</span><span class="ln c" id="l2">// sandwiched = never included, costs 0</span><span class="ln" id="l3"><span class="k">await</span> kabuto.<span class="hl">protectedSwap</span>({ account, signer, amountIn, bandBps: 50 });</span><span class="ln c" id="l4">// or sign only an intent and let anyone fill it</span><span class="ln" id="l5"><span class="k">await</span> kabuto.<span class="hl">signIntent</span>({ account, signer, tokenIn, maxIn, tokenOut, startOut, endOut, deadline });</span></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const E = "power3.out";
+    tl.from("#s-tag", { y: 20, opacity: 0, duration: 0.5, ease: E }, 0.2)
+      .from("#s-h", { y: 50, opacity: 0, duration: 0.8, ease: E }, 0.35)
+      .from("#code", { y: 60, opacity: 0, duration: 0.8, ease: E }, 1.0)
+      .from("#l1", { x: -30, opacity: 0, duration: 0.5, ease: E }, 1.4)
+      .from("#l2", { x: -30, opacity: 0, duration: 0.5, ease: E }, 3.2)
+      .from("#l3", { x: -30, opacity: 0, duration: 0.5, ease: E }, 3.6)
+      .from("#l4", { x: -30, opacity: 0, duration: 0.5, ease: E }, 5.6)
+      .from("#l5", { x: -30, opacity: 0, duration: 0.5, ease: E }, 6.0);
+    window.__timelines["sdk3"] = tl;
+  </script>
+</template>

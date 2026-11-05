@@ -1,0 +1,76 @@
+<template>
+  <style>
+    @font-face { font-family: "Urbanist"; src: url("assets/fonts/Urbanist.ttf"); font-weight: 100 900; }
+    @font-face { font-family: "Space Mono"; src: url("assets/fonts/SpaceMono-Regular.ttf"); }
+    #root { position: absolute; inset: 0; background: radial-gradient(1200px 700px at 30% 40%, rgba(255,233,176,.06), transparent 60%), #06070c; overflow: hidden; color: #efeadf; font-family: "Urbanist"; }
+    .e-tag { position: absolute; left: 120px; top: 96px; font: 400 22px/1 "Space Mono"; letter-spacing: .16em; text-transform: uppercase; color: #9b98a8; }
+    .e-h { position: absolute; left: 120px; top: 136px; font: 800 76px/1 "Urbanist"; letter-spacing: -.04em; }
+    .e-h em { font-style: normal; color: #ffe9b0; }
+    .tx { position: absolute; left: 120px; top: 300px; width: 1000px; padding: 26px; border-radius: 34px; background: #0c0d15; border: 1px solid rgba(239,234,223,.12); }
+    .tx-h { display: flex; justify-content: space-between; font: 400 22px/1 "Space Mono"; color: #9b98a8; padding: 4px 8px 18px; }
+    .fr { display: grid; grid-template-columns: 170px 1fr; align-items: center; gap: 22px; padding: 24px 26px; margin-top: 12px; border-radius: 22px; background: rgba(239,234,223,.045); border: 2px solid transparent; }
+    .fr .m { display: grid; place-items: center; height: 50px; border-radius: 12px; font: 700 22px/1 "Space Mono"; letter-spacing: .06em; }
+    .fr.v .m { background: rgba(255,233,176,.14); color: #ffe9b0; }
+    .fr.s .m { background: rgba(239,234,223,.08); color: #b9b4cc; }
+    .fr b { font: 700 34px/1.1 "Urbanist"; } .fr span { display: block; margin-top: 8px; font: 400 21px/1.2 "Space Mono"; color: #9b98a8; }
+    .gauge { position: absolute; left: 1200px; top: 300px; width: 600px; height: 470px; padding: 30px; border-radius: 34px; background: #0c0d15; border: 1px solid rgba(239,234,223,.12); }
+    .g-l { font: 400 22px/1 "Space Mono"; color: #9b98a8; letter-spacing: .1em; text-transform: uppercase; }
+    .g-track { position: absolute; left: 50px; right: 50px; top: 230px; height: 14px; border-radius: 99px; background: rgba(239,234,223,.08); }
+    .g-band { position: absolute; left: 180px; width: 180px; top: -18px; height: 50px; border-radius: 14px; background: rgba(166,228,191,.16); border: 2px solid rgba(166,228,191,.6); }
+    .g-band-l { position: absolute; left: 180px; width: 180px; top: 48px; text-align: center; font: 400 20px/1 "Space Mono"; color: #a6e4bf; }
+    .g-needle { position: absolute; left: 262px; top: -40px; width: 6px; height: 94px; border-radius: 3px; background: #ffe9b0; box-shadow: 0 0 24px rgba(255,233,176,.6); }
+    .g-needle-l { position: absolute; left: 50%; top: -46px; transform: translateX(-50%); white-space: nowrap; font: 700 24px/1 "Urbanist"; color: #ffe9b0; }
+    .g-bot { position: absolute; left: 50px; right: 50px; bottom: 34px; padding: 18px 22px; border-radius: 18px; background: rgba(229,72,46,.12); border: 1px solid rgba(229,72,46,.5); font: 700 26px/1.2 "Urbanist"; color: #ff9a8b; }
+    .chips { position: absolute; left: 120px; right: 120px; bottom: 96px; display: flex; gap: 22px; }
+    .chip { flex: 1; padding: 24px 28px; border-radius: 26px; background: #0c0d15; border: 1px solid rgba(239,234,223,.14); }
+    .chip small { display: block; font: 400 20px/1 "Space Mono"; color: #ffe9b0; letter-spacing: .08em; }
+    .chip b { display: block; margin-top: 12px; font: 700 30px/1.15 "Urbanist"; }
+    .stamp { position: absolute; left: 380px; top: 470px; padding: 26px 40px; border-radius: 24px; border: 3px solid #a6e4bf; background: rgba(6,7,12,.92); font: 800 54px/1 "Urbanist"; letter-spacing: -.02em; color: #a6e4bf; transform: rotate(-4deg); }
+    .stamp span { display: block; margin-top: 12px; font: 400 24px/1 "Space Mono"; letter-spacing: 0; color: #efeadf; }
+  </style>
+  <div id="root" data-composition-id="eip" data-width="1920" data-height="1080">
+    <div class="e-tag" id="e-tag">How the EIP saves you</div>
+    <div class="e-h" id="e-h">A swap that is only valid <em>at your price.</em></div>
+    <div class="tx" id="tx">
+      <div class="tx-h"><span>EIP-8141 frame transaction · type 0x06</span><span id="tx-st">admitted</span></div>
+      <div class="fr v" id="f0"><div class="m">VERIFY</div><div><b>verifyPrice(pool, band)</b><span>reads Uniswap v4 slot0 · valid only inside your band</span></div></div>
+      <div class="fr s" id="f1"><div class="m">SENDER</div><div><b>approve(router, 1,500 kUSD)</b><span>atomic</span></div></div>
+      <div class="fr s" id="f2"><div class="m">SENDER</div><div><b>swapExactIn → Uniswap v4</b><span>WETH / kUSD pool</span></div></div>
+    </div>
+    <div class="gauge" id="gauge">
+      <div class="g-l">Uniswap v4 pool price</div>
+      <div class="g-track"><div class="g-band"></div><div class="g-band-l">your ±0.5% band</div><div class="g-needle" id="needle"><div class="g-needle-l">price</div></div></div>
+      <div class="g-bot" id="g-bot">Bot front-runs → price jumps</div>
+    </div>
+    <div class="chips">
+      <div class="chip" id="c1"><small>EIP-8141</small><b>Frame transactions: VERIFY decides validity</b></div>
+      <div class="chip" id="c2"><small>ERC-8421</small><b>Alt-mempool: a staked account may read the pool</b></div>
+      <div class="chip" id="c3"><small>P256 · scheme 2</small><b>A passkey-style key signs the swap</b></div>
+    </div>
+    <div class="stamp" id="stamp">Never included<span>VERIFY reverted · PriceOutOfBand · 0 gas</span></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const E = "power3.out";
+    tl.from("#e-tag", { y: 20, opacity: 0, duration: 0.6, ease: E }, 0.2)
+      .from("#e-h", { y: 40, opacity: 0, duration: 0.8, ease: E }, 0.4)
+      .from("#tx", { y: 60, opacity: 0, duration: 0.9, ease: E }, 2.4)
+      .from("#f0", { x: -40, opacity: 0, duration: 0.6, ease: E }, 2.9)
+      .from("#f1", { x: -40, opacity: 0, duration: 0.6, ease: E }, 3.2)
+      .from("#f2", { x: -40, opacity: 0, duration: 0.6, ease: E }, 3.5)
+      .from("#c1", { y: 40, opacity: 0, duration: 0.7, ease: E }, 3.0)
+      .to("#f0", { borderColor: "rgba(255,233,176,.85)", boxShadow: "0 0 40px rgba(255,233,176,.18)", duration: 0.5 }, 5.6)
+      .from("#gauge", { x: 60, opacity: 0, duration: 0.9, ease: E }, 10.8)
+      .from("#needle", { scaleY: 0, transformOrigin: "50% 100%", duration: 0.5, ease: "back.out(2)" }, 11.6)
+      .from("#c2", { y: 40, opacity: 0, duration: 0.7, ease: E }, 15.2)
+      .from("#c3", { y: 40, opacity: 0, duration: 0.7, ease: E }, 20.4)
+      .from("#g-bot", { y: 20, opacity: 0, duration: 0.5, ease: E }, 23.6)
+      .to("#needle", { x: 250, duration: 0.9, ease: "power2.inOut" }, 24.1)
+      .to("#f0", { borderColor: "rgba(229,72,46,.9)", backgroundColor: "rgba(229,72,46,.12)", boxShadow: "0 0 40px rgba(229,72,46,.25)", duration: 0.4 }, 25.0)
+      .to("#tx-st", { color: "#ff9a8b", duration: 0.2 }, 25.0)
+      .to(["#f1", "#f2"], { opacity: 0.25, duration: 0.6 }, 25.3)
+      .from("#stamp", { scale: 1.6, opacity: 0, duration: 0.45, ease: "back.out(1.6)" }, 25.6);
+    tl.set("#tx-st", { textContent: "invalid" }, 25.0);
+    window.__timelines["eip"] = tl;
+  </script>
+</template>
