@@ -44,12 +44,12 @@ export async function onboard(onStep: (id: string, patch: Partial<Step>) => void
   });
   const st = s!;
   await run("faucet", async () => {
-    if ((await pub.getBalance({ address: st.funder })) < 200_000_000_000_000_000n) await faucet(st.funder);
+    if ((await pub.getBalance({ address: st.funder })) < 40_000_000_000_000_000n) await faucet(st.funder);
   });
   await run("deploy", async () => {
     if (st.account && (await pub.getCode({ address: st.account }))) return;
     const data = encodeDeployData({ abi: accountArtifact.abi, bytecode: accountArtifact.bytecode, args: [st.owner, D.predeploys.poolManager] });
-    const r = await sendLegacy(st.funderKey, { data, value: 80_000_000_000_000_000n }, 4n); // 0.08 ETH: stake + gas
+    const r = await sendLegacy(st.funderKey, { data, value: 35_000_000_000_000_000n }, 4n); // 0.035 ETH: 0.012 stake + gas for many swaps
     st.account = r.contractAddress!;
     onStep("deploy", { hash: r.transactionHash });
     save(st);

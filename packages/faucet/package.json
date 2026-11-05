@@ -1,0 +1,9 @@
+{
+  "name": "@kabuto/faucet",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": { "start": "tsx faucet.ts" },
+  "dependencies": { "viem": "^2.57.7" },
+  "devDependencies": { "tsx": "^4.23.15" }
+}

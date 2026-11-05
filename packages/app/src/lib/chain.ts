@@ -1,6 +1,6 @@
 import { createPublicClient, createWalletClient, http, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { D, devnet, LEGACY_GAS_PRICE } from "./config";
+import { D, devnet, KABUTO_FAUCET_URL, LEGACY_GAS_PRICE } from "./config";
 import { rpc } from "./rpc";
 
 export const pub = createPublicClient({ chain: devnet, transport: http(D.gateway), pollingInterval: 1000 });
@@ -17,9 +17,23 @@ export async function sendLegacy(pk: Hex, tx: { to?: Address; data?: Hex; value?
   return r;
 }
 
-/** Devnet faucet: 1 ETH, once per address per hour. */
+/**
+ * Devnet faucet: the public one (1 ETH, once per address per hour) first; when it is empty or refuses, the Kabuto
+ * fallback faucet (packages/faucet, a small devnet-only drip). Fails loudly if both refuse.
+ */
 export async function faucet(to: Address) {
-  await rpc("skandha_explorer_faucet", [to]);
+  try {
+    await rpc("skandha_explorer_faucet", [to]);
+  } catch (e: any) {
+    let res: Response;
+    try {
+      res = await fetch(`${KABUTO_FAUCET_URL}/drip`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ address: to }) });
+    } catch {
+      throw new Error(`The public devnet faucet refused (${e?.message ?? e}) and the Kabuto fallback faucet is offline (${KABUTO_FAUCET_URL}).`);
+    }
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(`The public devnet faucet refused (${e?.message ?? e}); fallback faucet: ${body.error ?? res.status}`);
+  }
   for (let i = 0; i < 60; i++) {
     if ((await pub.getBalance({ address: to })) > 0n) return;
     await new Promise((r) => setTimeout(r, 2000));
