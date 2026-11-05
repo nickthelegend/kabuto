@@ -1,0 +1,16 @@
+<template>
+  <style>
+    @font-face { font-family: "Urbanist"; src: url("assets/fonts/Urbanist.ttf"); font-weight: 100 900; }
+    #root { position: absolute; inset: 0; background: #06070c; overflow: hidden; }
+    #sec-img { position: absolute; left: 160px; top: 0; width: 1600px; height: 1253px; }
+  </style>
+  <div id="root" data-composition-id="security" data-width="1920" data-height="1080">
+    <img id="sec-img" class="clip" data-start="0" data-duration="17" src="assets/security.png" alt="" />
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#sec-img", { opacity: 0, y: 40 }, { opacity: 1, y: 40, duration: 0.6 }, 0);
+    tl.to("#sec-img", { y: -173, duration: 9, ease: "power1.inOut" }, 4.0);
+    window.__timelines["security"] = tl;
+  </script>
+</template>

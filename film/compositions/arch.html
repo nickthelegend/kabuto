@@ -1,0 +1,18 @@
+<template>
+  <style>
+    @font-face { font-family: "Urbanist"; src: url("assets/fonts/Urbanist.ttf"); font-weight: 100 900; }
+    #root { position: absolute; inset: 0; background: #06070c; overflow: hidden; }
+    #arch-img { position: absolute; left: 105px; top: 40px; width: 1710px; height: 1083px; object-fit: contain; }
+  </style>
+  <div id="root" data-composition-id="arch" data-width="1920" data-height="1080">
+    <img id="arch-img" class="clip" data-start="0" data-duration="17" src="assets/architecture.png" alt="" />
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#arch-img", { opacity: 0, scale: 1 }, { opacity: 1, scale: 1, duration: 0.6 }, 0);
+    tl.fromTo("#arch-img", { scale: 1, x: 0, y: 0 }, { scale: 1.45, x: -330, y: 120, duration: 2.0, ease: "power3.inOut" }, 4.5);
+    tl.to("#arch-img", { scale: 1.45, x: 200, y: 40, duration: 2.0, ease: "power3.inOut" }, 9.5);
+    tl.to("#arch-img", { scale: 1, x: 0, y: 0, duration: 1.4, ease: "power3.inOut" }, 14.5);
+    window.__timelines["arch"] = tl;
+  </script>
+</template>
