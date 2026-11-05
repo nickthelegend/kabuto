@@ -24,6 +24,24 @@ try {
       await page.locator(sel).first().scrollIntoViewIfNeeded();
       await pause(3500);
     }
+  } else if (scene === "protected2") {
+    // the protected swap alone, started only when the live bot is idle; every attempt stays in the footage
+    const botIdle = async () => { for (let i = 0; i < 60; i++) { try { const st = await (await fetch("http://localhost:8787/status")).json(); if (!st.busy) return; } catch {} await pause(1000); } };
+    await page.goto(url + "/#/app");
+    await page.getByText("Protected swap").first().click();
+    await page.fill("#amt", ""); await page.type("#amt", "1000", { delay: 60 });
+    await pause(4000);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await botIdle();
+      const before = await page.locator(".feed > li").count().catch(() => 0);
+      await page.getByRole("button", { name: "Swap with Kabuto" }).click();
+      await page.waitForFunction((n) => { const li = [...document.querySelectorAll(".feed > li")].find((x) => x.innerText.startsWith("Kabuto")); return li && /Included\n|Never included|Refused at the door|Failed/.test(li.innerText) && document.querySelectorAll(".feed > li").length > n; }, before, { timeout: 180_000 });
+      await pause(6000);
+      const top = await page.locator(".feed > li", { hasText: "Kabuto" }).first().innerText();
+      console.log("attempt", attempt + 1, top.split("\n").slice(0, 4).join(" | "));
+      if (/Never included|Refused at the door/.test(top)) break;
+      await pause(8000);
+    }
   } else if (scene === "protected") {
     await page.goto(url + "/#/app");
     await page.getByText("Protected swap").first().click();
@@ -38,11 +56,16 @@ try {
     const feedHas = (re) => page.waitForFunction((src) => new RegExp(src).test(document.querySelector(".feed")?.innerText ?? ""), re.source, { timeout: 240_000 });
     await page.goto(url + "/#/app");
     await pause(2000);
-    await page.getByRole("button", { name: /Create my Kabuto account|Resume setup/ }).click();
-    await page.waitForSelector(".modes", { timeout: 300_000 });
+    if (!(await page.locator(".modes").count())) {
+      await page.getByRole("button", { name: /Create my Kabuto account|Resume setup/ }).click();
+      await page.waitForSelector(".modes", { timeout: 300_000 });
+    }
     await pause(2500);
-    await page.getByRole("button", { name: /test kUSD/ }).click();
-    await page.waitForFunction(() => !/minting/.test([...document.querySelectorAll("button")].map((b) => b.innerText).join(" ")), null, { timeout: 120_000 });
+    // top up until both the Kabuto account and the comparison wallet hold enough kUSD for the 1,500 swap
+    for (let i = 0; i < 2; i++) {
+      await page.getByRole("button", { name: /test kUSD/ }).click();
+      await page.waitForFunction(() => !/minting/.test([...document.querySelectorAll("button")].map((b) => b.innerText).join(" ")), null, { timeout: 120_000 });
+    }
     await pause(6000);
     // 1. the ordinary wallet: the live bot sandwiches it
     await setAmount("1500");
