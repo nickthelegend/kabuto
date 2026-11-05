@@ -95,7 +95,10 @@ contract KabutoPaymaster is HegotaSupport(Devnet.ERC8421_WORKSHOP) {
         if (address(uint160(frameparam(3, FrameParam.RESOLVED_TARGET))) != router) revert BadShape(5);
         bytes memory d3 = framedatacopy(0, 4 + 9 * 32, 3);
         if (bytes4(d3) != SWAP_SEL) revert BadShape(6);
-        if (address(uint160(uint256(_word(d3, 4)))) != currency0 || address(uint160(uint256(_word(d3, 36)))) != currency1) revert BadShape(7);
+        // The full PoolKey (currencies, fee, tick spacing, hooks) must be the pinned pool.
+        bytes32 swapPoolId;
+        assembly ("memory-safe") { swapPoolId := keccak256(add(d3, 36), 160) }
+        if (swapPoolId != PoolId.unwrap(poolId)) revert BadShape(7);
         bool zeroForOne = uint256(_word(d3, 164)) != 0;
         uint256 amountIn = uint256(_word(d3, 196));
         if (address(uint160(uint256(_word(d3, 260)))) != sender) revert BadShape(8);
@@ -103,8 +106,10 @@ contract KabutoPaymaster is HegotaSupport(Devnet.ERC8421_WORKSHOP) {
 
         // 2: approve of the input token
         if (address(uint160(frameparam(2, FrameParam.RESOLVED_TARGET))) != tokenIn) revert BadShape(9);
-        bytes memory d2 = framedatacopy(0, 4, 2);
-        if (bytes4(d2) != APPROVE_SEL) revert BadShape(10);
+        bytes memory d2 = framedatacopy(0, 68, 2);
+        if (bytes4(d2) != APPROVE_SEL || address(uint160(uint256(_word(d2, 4)))) != router || uint256(_word(d2, 36)) < amountIn) {
+            revert BadShape(10);
+        }
 
         // 4: the fee, in the output token, to this paymaster
         if (address(uint160(frameparam(4, FrameParam.RESOLVED_TARGET))) != tokenOut) revert BadShape(11);

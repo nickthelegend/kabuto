@@ -1,0 +1,23 @@
+{
+  "name": "@kabuto/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "pretest": "forge build --root ../contracts",
+    "test": "vitest run --reporter=verbose",
+    "presoak": "forge build --root ../contracts",
+    "soak": "tsx soak.ts"
+  },
+  "dependencies": {
+    "@forshtat/hegota-support": "0.0.1",
+    "@noble/curves": "1.9.1",
+    "viem": "^2.57.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.6.3",
+    "vitest": "^3.2.4"
+  }
+}

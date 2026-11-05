@@ -115,6 +115,7 @@ contract KabutoAccount is HegotaSupport(Devnet.ERC8421_WORKSHOP) {
         // frame 2: pay tokenIn, at most maxIn
         if (frameparam(2, FrameParam.MODE) != uint256(FrameMode.SENDER)) revert BadIntentShape(4);
         if (address(uint160(frameparam(2, FrameParam.RESOLVED_TARGET))) != i.tokenIn) revert BadIntentShape(5);
+        if (frameparam(2, FrameParam.DATA_LENGTH) != 68) revert BadIntentShape(6);
         bytes memory d2 = framedatacopy(0, 68, 2);
         if (bytes4(d2) != TRANSFER_SEL || uint256(_word(d2, 36)) > i.maxIn) revert BadIntentShape(6);
 
