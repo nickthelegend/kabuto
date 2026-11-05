@@ -288,3 +288,12 @@ a { color: inherit; }
 code { font-family: var(--mono); font-size: .9em; }
 .ev-who img.av { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid var(--hair-2); }
 .brand img { border-radius: 9px; }
+@media (max-width: 700px) {
+  .l-hero { min-height: 0; padding-top: 220px; }
+  .l-hero-media { object-position: 72% 0%; height: 340px; }
+  .l-hero-shade { background: linear-gradient(180deg, rgba(6,7,12,0) 0px, rgba(6,7,12,.55) 180px, rgba(6,7,12,.98) 300px); }
+  .l-hero-copy { padding: 20px; }
+  .l-hero h1 { font-size: 40px; }
+  .l-hero .lede { font-size: 16px; }
+  .top .brand span { display: none; }
+}
