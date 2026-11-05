@@ -1,0 +1,63 @@
+{
+  "source": "skandha_explorer_getTransaction",
+  "hash": "0xe977006e7b94af4109c55c212d54cddcffd309f2a7ffe63ca23a8aa2d0cc6809",
+  "capturedAt": "2026-11-05T18:14:35.774Z",
+  "tx": {
+    "chainId": "0x539",
+    "nonceKeys": [
+      "0x0"
+    ],
+    "nonceSeq": "0xa",
+    "sender": "0xBe01159bB452E745718D3B6885AE8d50BA709ce0",
+    "frames": [
+      {
+        "mode": 1,
+        "flags": 3,
+        "target": null,
+        "limits": {
+          "execution": "0x15f90",
+          "state": "0x0"
+        },
+        "value": "0x0",
+        "data": "0x2c8cfee1e87318c6b97d2b811c56b0adcfa096ee696b6f5b5969d1ffcd9be15a06b45fe800000000000000000000000000000000000000000004796e96d368b0caf84330000000000000000000000000000000000000000000047f2c6aab67eea1a42c6c"
+      },
+      {
+        "mode": 2,
+        "flags": 4,
+        "target": "0x866Fc51eaFb778849e10552136d6e705f91307a7",
+        "limits": {
+          "execution": "0x493e0",
+          "state": "0x30d40"
+        },
+        "value": "0x0",
+        "data": "0x095ea7b300000000000000000000000096cdb816a8be85b238ceb3f53a7334b7f74359be0000000000000000000000000000000000000000000000000000000001c9c380"
+      },
+      {
+        "mode": 2,
+        "flags": 0,
+        "target": "0x96CDb816A8BE85b238Ceb3F53A7334B7f74359bE",
+        "limits": {
+          "execution": "0x61a80",
+          "state": "0x30d40"
+        },
+        "value": "0x0",
+        "data": "0x440aeb190000000000000000000000001b7d32025f7ca633943bbcc9ec61a98ef66187b6000000000000000000000000866fc51eafb778849e10552136d6e705f91307a70000000000000000000000000000000000000000000000000000000000000bb8000000000000000000000000000000000000000000000000000000000000003c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001c9c3800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000be01159bb452e745718d3b6885ae8d50ba709ce0"
+      }
+    ],
+    "signatures": [
+      {
+        "scheme": 1,
+        "signer": "0xABA8f326C55Bf6889bBfA070680bd81196752934",
+        "msg": "0x",
+        "signature": "0x009143746ca6573faa445552e028068a677e77d781dcf5821ef9a93334478389c02e22ebd579cd5ac523e84ca81350ce8da1cdd718836a81c62ffd95ae28eae1d4"
+      }
+    ],
+    "fees": {
+      "maxPriorityFeePerGas": "0x3b9aca00",
+      "maxFeePerGas": "0x77359400",
+      "maxFeePerBlobGas": "0x0"
+    },
+    "blobVersionedHashes": [],
+    "recentRootReferences": []
+  }
+}

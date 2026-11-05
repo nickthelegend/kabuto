@@ -1,0 +1,27 @@
+# Replay method
+
+## Source and scope
+
+This is a read-only replay of Ethereum mainnet `Swap` logs emitted by the Uniswap v4 PoolManager at `0x000000000004444c5dc75cB358380D2e3dE08A90`. The CLI records the inclusive block window, block timestamps, RPC endpoint, and elapsed scan time in `out/summary.json`. It scans every block in that window in contiguous chunks, beginning at 1,000 blocks per `eth_getLogs` request; errors halve the chunk size, and transient RPC errors back off and use the listed public endpoints. Raw RPC responses live in ignored `cache/`. The first observed swap in each pool has no earlier observed price unless another swap preceded it within the scan window. No pre-window backfill is inferred.
+
+The event ABI comes from [Uniswap v4 core's `IPoolManager.sol`](https://github.com/Uniswap/v4-core/blob/main/src/interfaces/IPoolManager.sol). The `Swap` amounts are *caller balance deltas*: negative is input paid by the caller, positive is output received. This follows `PoolManager._swap`, which emits the `Pool.swap` delta. The event's `sqrtPriceX96` is the price *after* that swap. `Initialize` supplies pool currencies, fee, and hooks when found in the separately recorded metadata lookback window (`--init-lookback`, default 5,000 blocks before the swap scan). Keyless RPC limits prevented a genesis-to-window initialization search; older pools remain `null` with a reason rather than receiving guessed tokens. ERC-20 `decimals()` is read through `eth_call` only for found candidate pools; native ETH is assigned 18 decimals.
+
+## Candidate rule
+
+For a single block and pool ID, enumerate three `Swap` logs with strictly increasing **transaction indices** `i < j < k`. The front and victim have the same sign of `amount0`; the back has the opposite sign. The front input is the negative amount in its input token, and the back output is the positive amount of that same token. The back output must be within 10% of the front input, inclusive, in raw token units. Then fetch only transactions in these directional triples. The front and back must share `tx.from`, or share a non-null `tx.to`. The victim's `tx.from` must differ from both outer transactions' `tx.from`. Report each unique log triple once. Multiple triples can involve the same victim or attacker transaction, so sums are **candidate totals**, not unique victim loss totals.
+
+Shared `tx.to` can be a widely used router, so it is only a weak bot-contract proxy. These conditions identify *sandwich-shaped sequences*, not proven common control, intent, or causal extraction. They can include ordinary arbitrage or unrelated trades (false positives). They miss private bundles with other structures, multiblock sandwiches, attacks spread across pools, multiple attackers, legs with unmatched sizes, and transactions that yield several swaps whose individual logs do not fit this shape (false negatives). Transaction index excludes multiple swaps inside one transaction from occupying two positions in a triple.
+
+## Price and loss
+
+The pre-front price is the immediately preceding observed `Swap.sqrtPriceX96` for that pool, including prior blocks in the scanned window. The post-front price is the front swap's `sqrtPriceX96`. Convert a square-root price to human token1 per token0 as `(sqrtPriceX96 / 2^96)^2 × 10^(decimals0 − decimals1)`. The victim's realized token1/token0 ratio is the absolute token1 pool delta divided by the absolute token0 pool delta, in human units.
+
+Victim loss in its input token is `input − output / prePrice` for token0 input, or `input − output × prePrice` for token1 input. This is a **spot-price shortfall estimate** and includes ordinary LP fees, protocol fees, and the victim's own price impact. It is not a counterfactual simulation of the victim's output without the front swap, and may be negative. No claim that the full amount was extracted by the attacker follows from this number.
+
+Attacker net token balances from the two outer `Swap` events are `front.amount0 + back.amount0` and `front.amount1 + back.amount1`. The reported gross profit in the front input token converts the other token's residual at the pre-front spot. This omits gas, builder payments, other trades or transfers in those transactions, and hook deltas. It can also be negative. For hooks, the PoolManager `Swap` event can differ from the caller's final delta, so these are pool-event estimates, not verified wallet P&L.
+
+USD conversion is limited to pools with USDC, USDT, or DAI, which are each treated as exactly $1, or to WETH/native ETH when a WETH/USDC v4 `Swap` price exists in the **same block**. For a stablecoin pair, the pre-front pool spot values the non-stable input token. An unpriced token, unavailable decimals, missing pool metadata, or missing pre-front price yields `null` plus a reason. USD totals add only known values and always include their coverage count. They are partial estimates, not a total market-wide extracted value.
+
+## Price-band replay
+
+The signing-time price is approximated by the pre-front swap price. A hypothetical `VERIFY` band is `±0.5%` by default (`--band` supplies a fractional alternative). The victim is counted as stopped only when `abs(postFrontPrice / preFrontPrice − 1) > band`. Equality is inside the band. Unknown pre-front prices yield a null result. The reported share uses only evaluated candidates; the all-candidate share is also provided. This compares spot prices only. It does not replay Kabuto transaction semantics, user-selected bands, swap path, hook effects, or actual signing time.

@@ -1,0 +1,1240 @@
+{
+  "generatedAt": "2026-11-05T18:18:22.243Z",
+  "rpcEndpoint": "https://eth.drpc.org",
+  "rpcEndpointNote": "Configured endpoint for uncached requests; cached responses may have been fetched from other public endpoints in earlier runs",
+  "manager": "0x000000000004444c5dc75cB358380D2e3dE08A90",
+  "window": {
+    "fromBlock": 26299825,
+    "toBlock": 26307824,
+    "fromTimestamp": 1793294063,
+    "toTimestamp": 1793390411,
+    "fromIso": "2026-10-29T17:14:23.000Z",
+    "toIso": "2026-10-30T20:00:11.000Z",
+    "blocksRequested": 8000,
+    "blocksScanned": 8000
+  },
+  "elapsedSeconds": 2.13,
+  "band": 0.005,
+  "metadata": {
+    "fromBlock": 26294825,
+    "toBlock": 26307824,
+    "candidatePools": 66,
+    "candidatePoolsFound": 11,
+    "poolsNeededForPricing": 1217,
+    "poolsFoundForPricing": 195
+  },
+  "counts": {
+    "sandwiches": 540,
+    "stopped": 419,
+    "evaluated": 538,
+    "unknownStop": 2,
+    "stoppedShare": 0.7788104089219331,
+    "stoppedShareOfAll": 0.7759259259259259
+  },
+  "totals": {
+    "victimLossUsdKnown": 1143.6405736785769,
+    "victimLossUsdKnownCount": 6,
+    "attackerGrossProfitUsdKnown": -4.900356955352734,
+    "attackerGrossProfitUsdKnownCount": 6,
+    "usdCoverage": 0.011111111111111112,
+    "caveat": "Known-USD sums are partial, use a 1 USD stablecoin peg, and include ordinary fee/price-impact effects. Gross attacker values omit gas, builder payments, hook deltas and other legs."
+  },
+  "perPool": {
+    "0x8aa4e11cbdf30eedc92100f4c8a31ff748e201d44712cc8c90d189edaa8e4e47": {
+      "sandwiches": 20,
+      "stopped": 11,
+      "evaluated": 20,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x63bb22f47c7ede6578a25c873e77eb782ec8e4c19778e36ce64d37877b5bd1e7": {
+      "sandwiches": 2,
+      "stopped": 0,
+      "evaluated": 2,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x00b9edc1583bf6ef09ff3a09f6c23ecb57fd7d0bb75625717ec81eed181e22d7": {
+      "sandwiches": 29,
+      "stopped": 22,
+      "evaluated": 29,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x5bb0ecf046453a6ef7b2c947a744948249839622d28cd919ceb7a2f500475623": {
+      "sandwiches": 1,
+      "stopped": 0,
+      "evaluated": 0,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x9e50f638b93e36856deebcb45cd9c1cb10fe8b0e675b32390acd862ead60d1d9": {
+      "sandwiches": 3,
+      "stopped": 3,
+      "evaluated": 3,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x7123588cc7631da596f0952816dd69f9c9010d5f216e7b42b1c894b1df070240": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xe63e32b2ae40601662f760d6bf5d771057324fbd97784fe1d3717069f7b75d45": {
+      "sandwiches": 4,
+      "stopped": 0,
+      "evaluated": 4,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x2287a9620adcbf6250dc71be9ee9b2d3a1ec85a464fc6f5c06669e8d07b61bba": {
+      "sandwiches": 47,
+      "stopped": 32,
+      "evaluated": 47,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xe98e8e9ee8ea049e06fb1e0cd8bab6a70f476c1cb94bafe00b3a2932f72d8279": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xc0a4317e7f24e172c48631d84ace055b26e4341707cf38b7e2b0d1f8805f119c": {
+      "sandwiches": 2,
+      "stopped": 2,
+      "evaluated": 2,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xc4fc30660423bd04ae1038c2910437d4c2e337498f19cea23df90f4c3e5cf88f": {
+      "sandwiches": 7,
+      "stopped": 7,
+      "evaluated": 7,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xd3e71af5f9e290f5d00dc8068d30067ee0f3890652253ed588102a5e6a93d6e7": {
+      "sandwiches": 2,
+      "stopped": 2,
+      "evaluated": 2,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x50ae33c238824aa1937d5d9f1766c487bca39b548f8d957994e8357eeeca3280": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x6b3a2464096ca6decb7832b6dd729626b13b9edaa1fa4c7c1edfc8ecf8d0bf55": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x21c67e77068de97969ba93d4aab21826d33ca12bb9f565d8496e8fda8a82ca27": {
+      "sandwiches": 2,
+      "stopped": 2,
+      "evaluated": 2,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x72331fcb696b0151904c03584b66dc8365bc63f8a144d89a773384e3a579ca73": {
+      "sandwiches": 7,
+      "stopped": 7,
+      "evaluated": 7,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x0f5238e3bd9dfd37b6e4f12fbad883c175e5899ccce56ad0f90976a79b5b0b7f": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xe096be9b4c427682e5b5bcb63c30e2ffa59dbbc5e5fa49cf2a0fc505f9dedff1": {
+      "sandwiches": 2,
+      "stopped": 2,
+      "evaluated": 2,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x2c2b6afc1db134173ef3c0c565e05eb5663b0c995868bf42f794f3ddf417f0a3": {
+      "sandwiches": 4,
+      "stopped": 4,
+      "evaluated": 4,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x98316e8405502774a5d0a0761276b5d26505a8195c1905169864008d5e7a3eea": {
+      "sandwiches": 1,
+      "stopped": 0,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x4a24fcf3c1cbebd80d09537c7aa15adf2d228aa1b9ba1b0e5fb82e66dc96c0d2": {
+      "sandwiches": 2,
+      "stopped": 2,
+      "evaluated": 2,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x395f91b34aa34a477ce3bc6505639a821b286a62b1a164fc1887fa3a5ef713a5": {
+      "sandwiches": 38,
+      "stopped": 12,
+      "evaluated": 38,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x2b21c65d9a7dc6926ee330a1c6e5a8037fd81774f3dc066536f800128e39f634": {
+      "sandwiches": 20,
+      "stopped": 14,
+      "evaluated": 20,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xab02ae3760ce6c4dd869fe16c9de3383010a2d1cb8819643fc4a0a9225180d3d": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 415.1014022952031,
+      "victimLossUsdKnownCount": 1,
+      "attackerGrossProfitUsdKnown": -229.951776295203,
+      "attackerGrossProfitUsdKnownCount": 1
+    },
+    "0x440d6eeb7644a3672af0aba79812cb61ff8e1abe7565390b6222d8ee2e218bf7": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x747ba49077e00554e47f76dd716006ec3aa6786db984141eac9c8f6c843b624a": {
+      "sandwiches": 58,
+      "stopped": 55,
+      "evaluated": 58,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xe018f09af38956affdfeab72c2cefbcd4e6fee44d09df7525ec9dba3e51356a5": {
+      "sandwiches": 1,
+      "stopped": 0,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xd790576b49a17562cd29054c4dd79d3c3fa17aeb14432cd9c20dc3b382f5042c": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x0fb0e40cec3bb23e13abc585958a93c796fbea56955e19a23727a716a0423239": {
+      "sandwiches": 57,
+      "stopped": 35,
+      "evaluated": 57,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x2b3f873c04ecb48041773cdf27a47f0fccf2a9f9037991ed72830f1a6247cebb": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 132.16445685439135,
+      "victimLossUsdKnownCount": 1,
+      "attackerGrossProfitUsdKnown": 12.570364,
+      "attackerGrossProfitUsdKnownCount": 1
+    },
+    "0x3d8a4e3c8985f514808a901424724c9bc03b7a5b5ac3ca8b679d4681690d1e7f": {
+      "sandwiches": 15,
+      "stopped": 10,
+      "evaluated": 15,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x7370d6494039e0b33cfd290fc57f98f6988479d9181b4ea415b908cc9b9a77f8": {
+      "sandwiches": 3,
+      "stopped": 3,
+      "evaluated": 3,
+      "victimLossUsdKnown": 258.60176804203155,
+      "victimLossUsdKnownCount": 3,
+      "attackerGrossProfitUsdKnown": 125.97048033985024,
+      "attackerGrossProfitUsdKnownCount": 3
+    },
+    "0xd3a88a5397e0446db33fbaf631e2a4c46ddc4c743ed2c52ba52a74b4084a472c": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xb32b4f87f80dbe110edab43909c795db3127e12e66e81609465db50375aafb2e": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xc6dfd67df0c7ca8b8a22f01ccbec208ad9c90d16ff035bd77d17effe53a0656b": {
+      "sandwiches": 3,
+      "stopped": 3,
+      "evaluated": 3,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x3868641eb72475e94c9a71066b0cb156873a85f4e3c4157cd96016419732988f": {
+      "sandwiches": 2,
+      "stopped": 2,
+      "evaluated": 2,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xd72e92377f1a8d6c35560a40aed3fc70235b5b462a1a5ea945e0d2ae8221167c": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 337.7729464869508,
+      "victimLossUsdKnownCount": 1,
+      "attackerGrossProfitUsdKnown": 86.510575,
+      "attackerGrossProfitUsdKnownCount": 1
+    },
+    "0x71ad627a0586a06b24834f7af328c5c387a512d183dbd7b8c31189a866adcefa": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x8664c22f690252fae5b2148f8e8ee7b926d2d0529312dac041cb3e894a4c8f6b": {
+      "sandwiches": 2,
+      "stopped": 2,
+      "evaluated": 2,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x15673a4f19f3df194c92c12c5fec9cbabbc340ed8e9d280c5685e5f43bb0a1f0": {
+      "sandwiches": 9,
+      "stopped": 8,
+      "evaluated": 9,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x5a5c7cab5f55c7ea020e97d4fa6dd5d99270e56ce76afa61d8cbddec0af92060": {
+      "sandwiches": 8,
+      "stopped": 8,
+      "evaluated": 8,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xf884f15815c943e08daebb0c8945d5b27cc7bfa4ed2880be1195048a9aad9f74": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x4f88f7c99022eace4740c6898f59ce6a2e798a1e64ce54589720b7153eb224a7": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x5933094b8a1f0f05902d446b668570ba9a61051a0cfc00757582532e9bd3e2cc": {
+      "sandwiches": 1,
+      "stopped": 0,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x90a64ed1c47392829a39df15ff25401c21818ea2db9e2538c9c25182f76b7c1e": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x70d10d1f3e7e1c0a9e8aa719ff85f2cbc30888f764f8fccbd1d5092743d53396": {
+      "sandwiches": 2,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xd262227cd6ad883b3d85c5138f017f90aaac0ff3ce69136c36a7280dbd009a03": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x56fc29b86900aa0afa6e20b020429bffba1105cfb45070492c67529b46eb48c1": {
+      "sandwiches": 7,
+      "stopped": 1,
+      "evaluated": 7,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x50d83eb1a8cd61d5580b9d8590ed7a2329be44f1412f88b223dd812fb53c6fe1": {
+      "sandwiches": 2,
+      "stopped": 2,
+      "evaluated": 2,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x8f8dbed88063ac5e249f0e12068e4b6b0949b709d1def71100fe5102afd31e3a": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xe6db83ce3f8d5b98b9c27c7372cbf4a52bc5fc6143543a757c2cc6d3c76d84c5": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x7418de766caaf03f971958d42d227509f1ffdbd0049f26bb697f209a31e6fe29": {
+      "sandwiches": 1,
+      "stopped": 0,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x3b1b1f2e775a6db1664f8e7d59ad568605ea2406312c11aef03146c0cf89d5b9": {
+      "sandwiches": 7,
+      "stopped": 0,
+      "evaluated": 7,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x2ffa178a4434a7f3fdf09ef2f5de6115b9198df51f53ff2722b1d730e160f49b": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xdab309d2ee8a87d24679c3ba8d3b35ab8d99f55095859c2b67baf86012fdd857": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x9cd12b164b4bb01e5bec2bab7febbfb310858447c0f9cb4cab95542c65230b7e": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x255d54ff2db1d721448d838d6941172ece87ef0e2a3b5f4e7c2354be3f57c2d1": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x8795f5763781a2842299c1e59225f32864114f561068f4943c9b3d1b105a1ff4": {
+      "sandwiches": 2,
+      "stopped": 2,
+      "evaluated": 2,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xfedc028df370a60e6df32a73d5f692dd2413b0fdf2d19c0a406202e10bc4ab4d": {
+      "sandwiches": 5,
+      "stopped": 5,
+      "evaluated": 5,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xdb4c4d91f12ce76f5c9ac0eae193cf3b4d6684cd5f09bf35d03dd9ae6d8a43b1": {
+      "sandwiches": 119,
+      "stopped": 117,
+      "evaluated": 119,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xd52eb9285b87e38e3c228b4e339bfe15f24888953966085cd25a2f6403a95326": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xebae144bd7240ac513c5e2b3fe5460a92ec7e3c4976be12b5eb84324dfa41af1": {
+      "sandwiches": 15,
+      "stopped": 15,
+      "evaluated": 15,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x2b46e483cd0f1b2b417dd83177a627b5178e036e6cf27a15517802496c6ccf22": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0x796a85caef3c820b5ce2a827fe8d299e21446b4654293407bd4700a8f288745b": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xe836920940770f97f2dc3bb729a87a655ea851dc65228465dc44051ab17eabc6": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    },
+    "0xeda62d2906d0edf26d40c793d581609552a44a87f618a98ff76ebe8dde4b7edb": {
+      "sandwiches": 1,
+      "stopped": 1,
+      "evaluated": 1,
+      "victimLossUsdKnown": 0,
+      "victimLossUsdKnownCount": 0,
+      "attackerGrossProfitUsdKnown": 0,
+      "attackerGrossProfitUsdKnownCount": 0
+    }
+  },
+  "top10": [
+    {
+      "poolId": "0x395f91b34aa34a477ce3bc6505639a821b286a62b1a164fc1887fa3a5ef713a5",
+      "blockNumber": 26302871,
+      "frontTx": "0x07d6646e26228c24ab7d89dd681b671cd058a866031e828fb233cb05dc93212d",
+      "victimTx": "0x204856d1ecb1185dd1e9ff5d1a854cd09768968279e525dc5cc5e8a249cc73c1",
+      "backTx": "0x08a8eb48db67cee67edc17f9cc046ffd8b405bf622ce652b570ba07da6c65434",
+      "etherscan": {
+        "front": "https://etherscan.io/tx/0x07d6646e26228c24ab7d89dd681b671cd058a866031e828fb233cb05dc93212d",
+        "victim": "https://etherscan.io/tx/0x204856d1ecb1185dd1e9ff5d1a854cd09768968279e525dc5cc5e8a249cc73c1",
+        "back": "https://etherscan.io/tx/0x08a8eb48db67cee67edc17f9cc046ffd8b405bf622ce652b570ba07da6c65434"
+      },
+      "attackerMatch": "from",
+      "attackerFrom": "0xae2fc483527b8ef99eb5d9b44875f005ba1fae13",
+      "victimFrom": "0xf01d2a83a89bee031667eda60428f2fe5760c4c9",
+      "pool": null,
+      "inputCurrency": null,
+      "preSpotToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable"
+      },
+      "postFrontSpotToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable"
+      },
+      "victimRealizedToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable or zero swap amount"
+      },
+      "victimLossInputToken": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerNetToken0": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerNetToken1": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerGrossProfitInputToken": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "victimLossUsd": {
+        "value": null,
+        "reason": "pool Initialize event not found in metadata lookback"
+      },
+      "attackerGrossProfitUsd": {
+        "value": null,
+        "reason": "pool Initialize event not found in metadata lookback"
+      },
+      "priceMove": 1538.425809304858,
+      "stopped": true,
+      "stoppedReason": null,
+      "band": 0.005,
+      "fee": 10,
+      "poolUsdPricing": null
+    },
+    {
+      "poolId": "0x2b46e483cd0f1b2b417dd83177a627b5178e036e6cf27a15517802496c6ccf22",
+      "blockNumber": 26306773,
+      "frontTx": "0x5e27183bc8651e4b59d32bbc2e305bce95f04857fbfb5cb51c69b71a9abe1f9d",
+      "victimTx": "0xd01dd17bcbc540599747f90f3dcc40e9ae67ec97f6a33827fbafd3c48ce4d739",
+      "backTx": "0x8d2b8b8eec0c27fc2aac4aa169301c6a9bc803fc4e1827c084414e2bced591fb",
+      "etherscan": {
+        "front": "https://etherscan.io/tx/0x5e27183bc8651e4b59d32bbc2e305bce95f04857fbfb5cb51c69b71a9abe1f9d",
+        "victim": "https://etherscan.io/tx/0xd01dd17bcbc540599747f90f3dcc40e9ae67ec97f6a33827fbafd3c48ce4d739",
+        "back": "https://etherscan.io/tx/0x8d2b8b8eec0c27fc2aac4aa169301c6a9bc803fc4e1827c084414e2bced591fb"
+      },
+      "attackerMatch": "from",
+      "attackerFrom": "0xa85b93983767729fcceac60e32a0bf87cd632108",
+      "victimFrom": "0xc1e4d8e24809ce8fda9066a230e484560fcab8aa",
+      "pool": null,
+      "inputCurrency": null,
+      "preSpotToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable"
+      },
+      "postFrontSpotToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable"
+      },
+      "victimRealizedToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable or zero swap amount"
+      },
+      "victimLossInputToken": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerNetToken0": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerNetToken1": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerGrossProfitInputToken": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "victimLossUsd": {
+        "value": null,
+        "reason": "pool Initialize event not found in metadata lookback"
+      },
+      "attackerGrossProfitUsd": {
+        "value": null,
+        "reason": "pool Initialize event not found in metadata lookback"
+      },
+      "priceMove": 9.215353176107298,
+      "stopped": true,
+      "stoppedReason": null,
+      "band": 0.005,
+      "fee": 3499,
+      "poolUsdPricing": null
+    },
+    {
+      "poolId": "0x0fb0e40cec3bb23e13abc585958a93c796fbea56955e19a23727a716a0423239",
+      "blockNumber": 26303076,
+      "frontTx": "0x4676e74295542f7f0db2d48d217d99053ec3f471ff13bb3aa097418be8562884",
+      "victimTx": "0x0324d04de0231c5b9d3b824296069d17fc950a9cdc6ad2375f0de475c4e7e5e6",
+      "backTx": "0x6aa3ac770306a2dd24b01bbea009709d483525ffbb97739b2112af58aaeef2ce",
+      "etherscan": {
+        "front": "https://etherscan.io/tx/0x4676e74295542f7f0db2d48d217d99053ec3f471ff13bb3aa097418be8562884",
+        "victim": "https://etherscan.io/tx/0x0324d04de0231c5b9d3b824296069d17fc950a9cdc6ad2375f0de475c4e7e5e6",
+        "back": "https://etherscan.io/tx/0x6aa3ac770306a2dd24b01bbea009709d483525ffbb97739b2112af58aaeef2ce"
+      },
+      "attackerMatch": "from",
+      "attackerFrom": "0xf77858313c169499c444974c13c84ef365adf36b",
+      "victimFrom": "0x70c69520eb6595d102bfd8aed8fc58428489c4e4",
+      "pool": null,
+      "inputCurrency": null,
+      "preSpotToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable"
+      },
+      "postFrontSpotToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable"
+      },
+      "victimRealizedToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable or zero swap amount"
+      },
+      "victimLossInputToken": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerNetToken0": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerNetToken1": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerGrossProfitInputToken": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "victimLossUsd": {
+        "value": null,
+        "reason": "pool Initialize event not found in metadata lookback"
+      },
+      "attackerGrossProfitUsd": {
+        "value": null,
+        "reason": "pool Initialize event not found in metadata lookback"
+      },
+      "priceMove": 1.8814515571990653,
+      "stopped": true,
+      "stoppedReason": null,
+      "band": 0.005,
+      "fee": 9,
+      "poolUsdPricing": null
+    },
+    {
+      "poolId": "0x395f91b34aa34a477ce3bc6505639a821b286a62b1a164fc1887fa3a5ef713a5",
+      "blockNumber": 26303647,
+      "frontTx": "0x57d9b20b3bf64bb614671fe97e9ed26a9bfe34b60dbaf9aa55a82d526fee690d",
+      "victimTx": "0x81e063ee83f9ddd07d27d8c1f8f5cea9e47e8281a258b414e378f76cc6883c28",
+      "backTx": "0x67ba75dddf5bd8da5bcdd86bf74a91cc3d1a26674dd4d9cceab51cf3d5984291",
+      "etherscan": {
+        "front": "https://etherscan.io/tx/0x57d9b20b3bf64bb614671fe97e9ed26a9bfe34b60dbaf9aa55a82d526fee690d",
+        "victim": "https://etherscan.io/tx/0x81e063ee83f9ddd07d27d8c1f8f5cea9e47e8281a258b414e378f76cc6883c28",
+        "back": "https://etherscan.io/tx/0x67ba75dddf5bd8da5bcdd86bf74a91cc3d1a26674dd4d9cceab51cf3d5984291"
+      },
+      "attackerMatch": "from",
+      "attackerFrom": "0xae2fc483527b8ef99eb5d9b44875f005ba1fae13",
+      "victimFrom": "0x9a7dd2aafcd51f0314d441d5c514cf1726a056b9",
+      "pool": null,
+      "inputCurrency": null,
+      "preSpotToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable"
+      },
+      "postFrontSpotToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable"
+      },
+      "victimRealizedToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable or zero swap amount"
+      },
+      "victimLossInputToken": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerNetToken0": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerNetToken1": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerGrossProfitInputToken": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "victimLossUsd": {
+        "value": null,
+        "reason": "pool Initialize event not found in metadata lookback"
+      },
+      "attackerGrossProfitUsd": {
+        "value": null,
+        "reason": "pool Initialize event not found in metadata lookback"
+      },
+      "priceMove": 0.9642827856881924,
+      "stopped": true,
+      "stoppedReason": null,
+      "band": 0.005,
+      "fee": 10,
+      "poolUsdPricing": null
+    },
+    {
+      "poolId": "0x71ad627a0586a06b24834f7af328c5c387a512d183dbd7b8c31189a866adcefa",
+      "blockNumber": 26303185,
+      "frontTx": "0x829fffd106e8920b70dc2200300a24fb6564420859d260de505af76e8e73c1e7",
+      "victimTx": "0x090798d6248239f2d19d51d96dceb5f2a631bd1677e14845aa12fe33c751923e",
+      "backTx": "0x5959ad7c10f10e9852c316ab66d79d8057970438bbddc9f8f803bd0fe965b3a1",
+      "etherscan": {
+        "front": "https://etherscan.io/tx/0x829fffd106e8920b70dc2200300a24fb6564420859d260de505af76e8e73c1e7",
+        "victim": "https://etherscan.io/tx/0x090798d6248239f2d19d51d96dceb5f2a631bd1677e14845aa12fe33c751923e",
+        "back": "https://etherscan.io/tx/0x5959ad7c10f10e9852c316ab66d79d8057970438bbddc9f8f803bd0fe965b3a1"
+      },
+      "attackerMatch": "from",
+      "attackerFrom": "0x00000000dfe9a4e57631ce11d7854871756b0111",
+      "victimFrom": "0x0e14a3e9af1afdfc60554e3e2a40c8284d647093",
+      "pool": null,
+      "inputCurrency": null,
+      "preSpotToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable"
+      },
+      "postFrontSpotToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable"
+      },
+      "victimRealizedToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable or zero swap amount"
+      },
+      "victimLossInputToken": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerNetToken0": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerNetToken1": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerGrossProfitInputToken": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "victimLossUsd": {
+        "value": null,
+        "reason": "pool Initialize event not found in metadata lookback"
+      },
+      "attackerGrossProfitUsd": {
+        "value": null,
+        "reason": "pool Initialize event not found in metadata lookback"
+      },
+      "priceMove": -0.9316154937108815,
+      "stopped": true,
+      "stoppedReason": null,
+      "band": 0.005,
+      "fee": 3499,
+      "poolUsdPricing": null
+    },
+    {
+      "poolId": "0x8aa4e11cbdf30eedc92100f4c8a31ff748e201d44712cc8c90d189edaa8e4e47",
+      "blockNumber": 26301522,
+      "frontTx": "0xd78bfd9aafab6ad439028f6b43e8e4d9c442d3e226c7360e241d7e382da33a60",
+      "victimTx": "0xf6387b2f1c4446de0dd10fee80f7c8a351d7f7074377862d2db897841bfe13b5",
+      "backTx": "0x9ec7c72f07a7fce3739845c92a6790cc3115d0f724135c53e3336cfeba1d2674",
+      "etherscan": {
+        "front": "https://etherscan.io/tx/0xd78bfd9aafab6ad439028f6b43e8e4d9c442d3e226c7360e241d7e382da33a60",
+        "victim": "https://etherscan.io/tx/0xf6387b2f1c4446de0dd10fee80f7c8a351d7f7074377862d2db897841bfe13b5",
+        "back": "https://etherscan.io/tx/0x9ec7c72f07a7fce3739845c92a6790cc3115d0f724135c53e3336cfeba1d2674"
+      },
+      "attackerMatch": "from",
+      "attackerFrom": "0xae2fc483527b8ef99eb5d9b44875f005ba1fae13",
+      "victimFrom": "0x92fbb21d1e72f7f7f291a38d54f28b6ca81ca15c",
+      "pool": null,
+      "inputCurrency": null,
+      "preSpotToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable"
+      },
+      "postFrontSpotToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable"
+      },
+      "victimRealizedToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable or zero swap amount"
+      },
+      "victimLossInputToken": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerNetToken0": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerNetToken1": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerGrossProfitInputToken": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "victimLossUsd": {
+        "value": null,
+        "reason": "pool Initialize event not found in metadata lookback"
+      },
+      "attackerGrossProfitUsd": {
+        "value": null,
+        "reason": "pool Initialize event not found in metadata lookback"
+      },
+      "priceMove": 0.9189136111566014,
+      "stopped": true,
+      "stoppedReason": null,
+      "band": 0.005,
+      "fee": 12,
+      "poolUsdPricing": null
+    },
+    {
+      "poolId": "0x00b9edc1583bf6ef09ff3a09f6c23ecb57fd7d0bb75625717ec81eed181e22d7",
+      "blockNumber": 26300993,
+      "frontTx": "0xcfc16cdca2aed83822736d1ac8ed2e0174e263c7fc0698bc836f06dfeaf2daa8",
+      "victimTx": "0xd7bcee81a13a2603b0042bd130618a52880d5441aa2a2a7e2ba7ee5999cc6ea7",
+      "backTx": "0x51bd4d445c3fe95e380106579b7e2ea64032a4602edc8da23e1fcdbba9aea346",
+      "etherscan": {
+        "front": "https://etherscan.io/tx/0xcfc16cdca2aed83822736d1ac8ed2e0174e263c7fc0698bc836f06dfeaf2daa8",
+        "victim": "https://etherscan.io/tx/0xd7bcee81a13a2603b0042bd130618a52880d5441aa2a2a7e2ba7ee5999cc6ea7",
+        "back": "https://etherscan.io/tx/0x51bd4d445c3fe95e380106579b7e2ea64032a4602edc8da23e1fcdbba9aea346"
+      },
+      "attackerMatch": "from",
+      "attackerFrom": "0x654fae4aa229d104cabead47e56703f58b174be4",
+      "victimFrom": "0x90b460041bf8162d41f71f808ef672677b1bf94a",
+      "pool": null,
+      "inputCurrency": null,
+      "preSpotToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable"
+      },
+      "postFrontSpotToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable"
+      },
+      "victimRealizedToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable or zero swap amount"
+      },
+      "victimLossInputToken": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerNetToken0": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerNetToken1": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerGrossProfitInputToken": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "victimLossUsd": {
+        "value": null,
+        "reason": "pool Initialize event not found in metadata lookback"
+      },
+      "attackerGrossProfitUsd": {
+        "value": null,
+        "reason": "pool Initialize event not found in metadata lookback"
+      },
+      "priceMove": -0.9021141678650663,
+      "stopped": true,
+      "stoppedReason": null,
+      "band": 0.005,
+      "fee": 125,
+      "poolUsdPricing": null
+    },
+    {
+      "poolId": "0x2c2b6afc1db134173ef3c0c565e05eb5663b0c995868bf42f794f3ddf417f0a3",
+      "blockNumber": 26301572,
+      "frontTx": "0x043db672abc972ccdd4a7fbb3c2eea48c09aa9de692fb1a0b5723450f749a601",
+      "victimTx": "0x248852cfd13e4009a322bc33a33cb2b6920bb25b5f726c234ceb68cc7ba150b5",
+      "backTx": "0xf4a4f8abb5bd762594f0dfb2b14ed8ca0461e832ac3c3856e64e39bd6640198b",
+      "etherscan": {
+        "front": "https://etherscan.io/tx/0x043db672abc972ccdd4a7fbb3c2eea48c09aa9de692fb1a0b5723450f749a601",
+        "victim": "https://etherscan.io/tx/0x248852cfd13e4009a322bc33a33cb2b6920bb25b5f726c234ceb68cc7ba150b5",
+        "back": "https://etherscan.io/tx/0xf4a4f8abb5bd762594f0dfb2b14ed8ca0461e832ac3c3856e64e39bd6640198b"
+      },
+      "attackerMatch": "from",
+      "attackerFrom": "0xae2fc483527b8ef99eb5d9b44875f005ba1fae13",
+      "victimFrom": "0xcd18c0cdbb9c0f60e9d4f874d5a0d0eb4fc34bce",
+      "pool": null,
+      "inputCurrency": null,
+      "preSpotToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable"
+      },
+      "postFrontSpotToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable"
+      },
+      "victimRealizedToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable or zero swap amount"
+      },
+      "victimLossInputToken": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerNetToken0": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerNetToken1": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerGrossProfitInputToken": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "victimLossUsd": {
+        "value": null,
+        "reason": "pool Initialize event not found in metadata lookback"
+      },
+      "attackerGrossProfitUsd": {
+        "value": null,
+        "reason": "pool Initialize event not found in metadata lookback"
+      },
+      "priceMove": -0.7055786936705228,
+      "stopped": true,
+      "stoppedReason": null,
+      "band": 0.005,
+      "fee": 1193,
+      "poolUsdPricing": null
+    },
+    {
+      "poolId": "0x2c2b6afc1db134173ef3c0c565e05eb5663b0c995868bf42f794f3ddf417f0a3",
+      "blockNumber": 26301559,
+      "frontTx": "0xc5e5c122e7554d09b7e5741e0a1051aa59442aead25d5f95690ac6dcda82ff85",
+      "victimTx": "0xcfb9718d54312fa895c6f8f6c4a1e0dd7da81e019f932e0c5272a27f20484c31",
+      "backTx": "0xfc455072bc54b48be9d7ae5be09b2f53b268ed7f60217bc9b0c4854ef5da548f",
+      "etherscan": {
+        "front": "https://etherscan.io/tx/0xc5e5c122e7554d09b7e5741e0a1051aa59442aead25d5f95690ac6dcda82ff85",
+        "victim": "https://etherscan.io/tx/0xcfb9718d54312fa895c6f8f6c4a1e0dd7da81e019f932e0c5272a27f20484c31",
+        "back": "https://etherscan.io/tx/0xfc455072bc54b48be9d7ae5be09b2f53b268ed7f60217bc9b0c4854ef5da548f"
+      },
+      "attackerMatch": "from",
+      "attackerFrom": "0xae2fc483527b8ef99eb5d9b44875f005ba1fae13",
+      "victimFrom": "0xdad6b2ed2608429893c9d54e9734b4f36aed8637",
+      "pool": null,
+      "inputCurrency": null,
+      "preSpotToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable"
+      },
+      "postFrontSpotToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable"
+      },
+      "victimRealizedToken1PerToken0": {
+        "value": null,
+        "reason": "token decimals unavailable or zero swap amount"
+      },
+      "victimLossInputToken": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerNetToken0": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerNetToken1": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "attackerGrossProfitInputToken": {
+        "value": null,
+        "reason": "pool metadata or token decimals unavailable"
+      },
+      "victimLossUsd": {
+        "value": null,
+        "reason": "pool Initialize event not found in metadata lookback"
+      },
+      "attackerGrossProfitUsd": {
+        "value": null,
+        "reason": "pool Initialize event not found in metadata lookback"
+      },
+      "priceMove": -0.6008035439500299,
+      "stopped": true,
+      "stoppedReason": null,
+      "band": 0.005,
+      "fee": 1193,
+      "poolUsdPricing": null
+    },
+    {
+      "poolId": "0xebae144bd7240ac513c5e2b3fe5460a92ec7e3c4976be12b5eb84324dfa41af1",
+      "blockNumber": 26306613,
+      "frontTx": "0x9c33021efd830442c1117584fb695bc67e04226c57e4aaddb198187a8e86b930",
+      "victimTx": "0x3ccbfb0595713d30ada031d36d2aa4eb5d0c3b36c9ed9f368250f178425b0c27",
+      "backTx": "0x8891ae739ed8e86710456ff5e9376712e9ad7c593be9eac0722d48859e2ab20a",
+      "etherscan": {
+        "front": "https://etherscan.io/tx/0x9c33021efd830442c1117584fb695bc67e04226c57e4aaddb198187a8e86b930",
+        "victim": "https://etherscan.io/tx/0x3ccbfb0595713d30ada031d36d2aa4eb5d0c3b36c9ed9f368250f178425b0c27",
+        "back": "https://etherscan.io/tx/0x8891ae739ed8e86710456ff5e9376712e9ad7c593be9eac0722d48859e2ab20a"
+      },
+      "attackerMatch": "from",
+      "attackerFrom": "0x4d92a9835f4768aac92531cf1a638e444912dada",
+      "victimFrom": "0xbc5dfeec736894bf2571e9488cdfa62b879f0165",
+      "pool": {
+        "id": "0xebae144bd7240ac513c5e2b3fe5460a92ec7e3c4976be12b5eb84324dfa41af1",
+        "currency0": "0x6982508145454ce325ddbe47a25d4ec3d2311933",
+        "currency1": "0x86ea42ba0ee511383945ede48e1e96e663b08b4c",
+        "fee": 0,
+        "hooks": "0x322dcec4958c14e021a9f1cd49df11b9457968cc",
+        "tickSpacing": 200,
+        "initializeBlock": 26306578
+      },
+      "inputCurrency": "0x6982508145454ce325ddbe47a25d4ec3d2311933",
+      "preSpotToken1PerToken0": {
+        "value": 0.5633154350474849,
+        "reason": null
+      },
+      "postFrontSpotToken1PerToken0": {
+        "value": 0.2458079266636058,
+        "reason": null
+      },
+      "victimRealizedToken1PerToken0": {
+        "value": 0.23465005999365812,
+        "reason": null
+      },
+      "victimLossInputToken": {
+        "value": 50633457.19665439,
+        "reason": null
+      },
+      "attackerNetToken0": {
+        "value": 49515993.685009465,
+        "reason": null
+      },
+      "attackerNetToken1": {
+        "value": 1e-18,
+        "reason": null
+      },
+      "attackerGrossProfitInputToken": {
+        "value": 49515993.685009465,
+        "reason": null
+      },
+      "victimLossUsd": {
+        "value": null,
+        "reason": "no same-block WETH/USDC v4 price or stablecoin quote"
+      },
+      "attackerGrossProfitUsd": {
+        "value": null,
+        "reason": "no same-block WETH/USDC v4 price or stablecoin quote"
+      },
+      "priceMove": -0.5636407039993759,
+      "stopped": true,
+      "stoppedReason": null,
+      "band": 0.005,
+      "fee": 0,
+      "poolUsdPricing": null
+    }
+  ],
+  "top10Basis": "Largest absolute front-run spot-price movement among candidates with a known pre-front price; USD pricing is not required",
+  "method": "See METHOD.md"
+}
