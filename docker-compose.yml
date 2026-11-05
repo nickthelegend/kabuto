@@ -16,8 +16,8 @@ services:
     working_dir: /app/packages/filler
     command: ["npx", "tsx", "src/relay.ts"]
     mem_limit: 192m
-    environment: { <<: *env, PORT: "8788" }
-    volumes: [relay-data:/app/packages/filler/data]
+    environment: { <<: *env, PORT: "8788", KABUTO_KEYS_FILE: /arkiv-keys/arkiv.json }
+    volumes: [relay-data:/app/packages/filler/data, arkiv-keys:/arkiv-keys:ro]
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8788/intents').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
       interval: 60s
@@ -80,6 +80,7 @@ services:
       - traefik.http.routers.hk-kabuto-faucet.tls.certresolver=letsencrypt
       - traefik.http.services.hk-kabuto-faucet.loadbalancer.server.port=8789
 volumes:
+  arkiv-keys:
   keys:
   relay-data:
   filler-data:

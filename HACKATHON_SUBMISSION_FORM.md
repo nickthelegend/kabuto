@@ -17,7 +17,7 @@ Kabuto is a DEX, an SDK and an open filler network built on EIP-8141 frame trans
 
 **The swap can pay its own gas.** A staked paymaster inspects the frames and sponsors a price-pinned swap that repays it from the output in the same atomic batch: the account's ETH moved by exactly 0.
 
-**Intent board on Arkiv.** The relay mirrors each verified intent to Arkiv (Rabdi) as an entity that expires at the intent's deadline, and records fill outcomes (a landed fill only after the devnet confirms it); fillers and the app's Intents tab can read the board from Arkiv. Settlement stays on chain 1337.
+**Intent board on Arkiv.** The relay mirrors each verified intent to Arkiv (Rabdi) as an entity that expires at the intent's deadline, and records fill outcomes (a landed fill only after the devnet confirms it); the app's Intents tab reads the board from Arkiv, and fillers can too. Live on Rabdi with a real intent and fill. Settlement stays on chain 1337.
 
 Every claim in the README is tied to the contract line that enforces it, the test that covers it and the devnet transaction that proves it.
 
@@ -36,7 +36,7 @@ Every claim in the README is tied to the contract line that enforces it, the tes
 ## Partner prizes (max 3)
 1. Ethereum Foundation: Best use of the Frame Transaction Alternative Mempool
 2. Uniswap Foundation: Build with Uniswap (FEEDBACK.md included)
-3. Arkiv: Build on Arkiv (from scratch), **only if the Arkiv writer is funded and an entity is live before submitting** (see README "Arkiv intent board"). Otherwise leave the third slot empty rather than claim it.
+3. Arkiv: Build on Arkiv (from scratch). Live: writer `0x8eD225Ae7f4b445Bfee6ad5dd9719C59426Af3aF`, intent entity `0xd309c13a…20d0` and its fill entity `0xd9cc8020…4e5f` (README "Arkiv intent board").
 
 ## Links
 - Repo: https://github.com/nickthelegend/kabuto

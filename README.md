@@ -197,17 +197,27 @@ Full API: [packages/sdk/README.md](packages/sdk/README.md).
 
 ## Arkiv intent board (Rabdi testnet)
 
-The relay can mirror verified, signed chain 1337 intents to Arkiv. Arkiv stores expiring listings and fill outcomes; all swaps still settle on the EIP-8141 devnet. Start the relay with a funded Rabdi writer in `ARKIV_PRIVATE_KEY`, or put an `"arkiv"` role in the JSON file at `KABUTO_KEYS_FILE`. `ARKIV_ACCESS_KEY` is optional. Configure `ARKIV_WRITER` for a filler using `--source arkiv`, and `VITE_ARKIV_WRITER` for the browser board. The default filler source remains the relay. `GET /arkiv` reports the writer, tGLM balance, publication count, and errors.
+Open intents need a public place where any filler can find them. Kabuto's relay mirrors every verified, signed chain 1337 intent to **Arkiv** as an entity that **expires at the intent's own deadline**, and records each fill outcome as a separate entity. The app's Intents tab reads the board straight from Arkiv, and fillers can poll Arkiv instead of the relay (`--source arkiv`). Swaps still settle only on the EIP-8141 devnet; Arkiv is the data layer.
 
-**Writer addresses with published Kabuto entities:** none yet. The Rabdi writer has not been funded in this checkout, so the live write test is skipped. After funding and publishing, use the address returned by `GET /arkiv` here and in `ARKIV_WRITER` / `VITE_ARKIV_WRITER`. Do not use the separate, unfunded spike address as evidence of a write.
+**Live, Nov 6 2026 (from the deployed app):**
 
-Judge query on Rabdi (`https://rpc.rabdi.db-chain.testnet.arkiv.network`):
+| | |
+|---|---|
+| Writer address (owns every Kabuto entity) | [`0x8eD225Ae7f4b445Bfee6ad5dd9719C59426Af3aF`](https://rabdi.explorer.arkiv.network/address/0x8eD225Ae7f4b445Bfee6ad5dd9719C59426Af3aF) |
+| Intent entity (300 kUSD → WETH, `kabuto.intent.v1`) | [`0xd309c13a…20d0`](https://rabdi.explorer.arkiv.network/entity/0xd309c13a29b10ff87b4ecfd62721f168397ea25930a0a2e5dc8f0f910be420d0), published ~4 s after posting, status patched `open` → `filled` |
+| Fill entity (`kabuto.fill.v1`, outcome `landed`) | [`0xd9cc8020…4e5f`](https://rabdi.explorer.arkiv.network/entity/0xd9cc8020d93d9bdae3052f914a1770613cc2c4958edaf72cf0621cca76fd4e5f), linking the intent key to devnet fill [`0xd498630c…752b`](https://explorer.altmempool.wtf/tx/0xd498630c236fa7132b41011414430d0765d86b7ab4db62fc360901fc04f5752b) |
+
+A landed fill is written only after the devnet explorer confirms the transaction on chain (fill reports arrive on an open endpoint). `GET https://kabuto-relay.201-18-198-162.sslip.io/arkiv` shows the writer, its tGLM balance, the publication count and the last error.
+
+**Query judges can run** on Rabdi (`https://rpc.rabdi.db-chain.testnet.arkiv.network`, chain 7794095):
 
 ```text
 arkiv.schema = str('kabuto.intent.v1') AND status = str('open') AND chainId = u64(1337)
 ```
 
-The entity schema and Arkiv judging notes are in [`arkiv/schema.md`](arkiv/schema.md), [`arkiv/how-you-use-arkiv.md`](arkiv/how-you-use-arkiv.md), [`arkiv/why-arkiv.md`](arkiv/why-arkiv.md), [`arkiv/reach.md`](arkiv/reach.md), and [`arkiv/friction.md`](arkiv/friction.md). AI assistance was used to implement and review the Arkiv integration, test the SDK read path, and draft these notes; the repository's authors remain responsible for the code and claims.
+(open intents right now; drop the `status` clause to see filled ones, or query `arkiv.schema = str('kabuto.fill.v1')` for the fill log). Always filter by the writer as owner (`$owner`); anyone can write an entity with the same schema name.
+
+Schema and judging notes: [`arkiv/schema.md`](arkiv/schema.md), [`arkiv/how-you-use-arkiv.md`](arkiv/how-you-use-arkiv.md), [`arkiv/why-arkiv.md`](arkiv/why-arkiv.md), [`arkiv/reach.md`](arkiv/reach.md), [`arkiv/friction.md`](arkiv/friction.md). AI assistance was used to implement and review the Arkiv integration and draft these notes; the authors remain responsible for the code and claims.
 
 ## Where it runs
 
