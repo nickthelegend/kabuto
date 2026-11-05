@@ -17,6 +17,10 @@ const short = (a?: string, n = 6) => (a ? `${a.slice(0, n)}…${a.slice(-4)}` : 
 const txUrl = (h?: string) => `${D.explorer}tx/${h}`;
 type Bals = { eth: bigint; kusd: bigint; weth: bigint };
 const UNPROTECTED_SLIPPAGE_BPS = 200; // what an ordinary wallet sends (2%)
+/** kUSD lost to a worse fill, from the attempt's own numbers (no live price): buy = share of kUSD paid, sell = kUSD short. */
+const lossKusd = (a: Attempt) => (a.out === undefined || a.quoted <= a.out ? 0 : a.side === "buy" ? (Number(a.amountIn) / 1e6) * (Number(a.quoted - a.out) / Number(a.quoted)) : Number(a.quoted - a.out) / 1e6);
+const fmtGas = (w: bigint) => (w === 0n ? "0 ETH" : w < 10n ** 12n ? `${(Number(w) / 1e9).toLocaleString("en-US", { maximumFractionDigits: 1 })} gwei` : `${fmt(w, 18, 6)} ETH`);
+type Loss = { kusd: number; side: Side; amountIn: bigint };
 
 /* ------------------------------------------------------------------ shared live state */
 function useLive() {
@@ -144,7 +148,7 @@ function SwapPanel({ w, acct, eoa, sqrtP, onConnect, onDone }: { w: Saved | null
   const [q, setQ] = useState<bigint | null>(null);
   const [busy, setBusy] = useState(false);
   const [last, setLast] = useState<Attempt | null>(null);
-  const [lostKusd, setLostKusd] = useState<number | null>(null);
+  const [loss, setLoss] = useState<Loss | null>(null);
   const tin = tokenIn(side), tout = tokenOut(side);
   const price = sqrtP ? priceFromSqrt(sqrtP) : null; // kUSD per WETH
   const amountIn = useMemo(() => { try { const v = parseUnits(amount || "0", tin.decimals); return v > 0n ? v : null; } catch { return null; } }, [amount, tin.decimals]);
@@ -166,7 +170,7 @@ function SwapPanel({ w, acct, eoa, sqrtP, onConnect, onDone }: { w: Saved | null
     try {
       const a = protect ? await kabutoSwap(w, side, amountIn, bandBps, setLast) : await normalSwap(w, side, amountIn, UNPROTECTED_SLIPPAGE_BPS, setLast);
       setLast(a);
-      if (!protect && a.out !== undefined && a.quoted > a.out) setLostKusd(toKusd(a.quoted - a.out, tout.decimals, tout.symbol === "WETH"));
+      if (!protect && a.phase === "included") setLoss({ kusd: lossKusd(a), side: a.side, amountIn: a.amountIn });
       onDone();
     } finally { setBusy(false); }
   };
@@ -213,23 +217,23 @@ function SwapPanel({ w, acct, eoa, sqrtP, onConnect, onDone }: { w: Saved | null
         )}
       </section>
 
-      <AnimatePresence mode="popLayout">{last && <SwapResult key={last.id} a={last} protect={last.wallet === "kabuto"} lostKusd={lostKusd} price={price} />}</AnimatePresence>
+      <AnimatePresence mode="popLayout">{last && <SwapResult key={last.id} a={last} protect={last.wallet === "kabuto"} loss={loss} />}</AnimatePresence>
     </div>
   );
 }
 
-function SwapResult({ a, protect, lostKusd, price }: { a: Attempt; protect: boolean; lostKusd: number | null; price: number | null }) {
+function SwapResult({ a, protect, loss }: { a: Attempt; protect: boolean; loss: Loss | null }) {
   const tout = tokenOut(a.side);
   const pending = !["included", "cancelled", "rejected", "reverted", "failed"].includes(a.phase);
   const worse = a.out !== undefined && a.quoted > 0n ? Number(a.quoted - a.out) / Number(a.quoted) : null;
-  const lostHere = a.out !== undefined && a.quoted > a.out ? Number(a.quoted - a.out) / 10 ** tout.decimals * (tout.symbol === "WETH" ? (price ?? 0) : 1) : 0;
+  const lostHere = lossKusd(a);
   let tone = "", title = "", body = "";
   if (pending) { title = "Waiting for a block…"; }
   else if (a.phase === "cancelled" || a.phase === "rejected") { tone = "good"; title = "Sandwich blocked"; body = "Not included · 0 gas · tokens untouched"; }
   else if (a.phase === "included" && worse !== null && worse > 0.0015) { tone = "bad"; title = `Sandwiched · ${(worse * 100).toFixed(2)}% worse`; body = `Lost ${lostHere.toLocaleString("en-US", { maximumFractionDigits: 2 })} kUSD`; }
   else if (a.phase === "included") { tone = "good"; title = "Filled at your price"; }
   else { tone = "bad"; title = "Did not complete"; body = a.error ?? ""; }
-  const saved = protect && !pending && lostKusd !== null && (a.phase === "cancelled" || a.phase === "rejected" || (a.phase === "included" && (worse ?? 0) <= 0.0015));
+  const saved = protect && !pending && !!loss && loss.kusd > 0 && loss.side === a.side && loss.amountIn === a.amountIn && (a.phase === "cancelled" || a.phase === "rejected" || (a.phase === "included" && (worse ?? 0) <= 0.0015));
   return (
     <motion.section layout {...pop} className={`dx-result ${tone}`} aria-live="polite">
       <div className="dx-result-h"><span className="dx-tag">{protect ? "Protected" : "Unprotected"}</span>{a.hash && <a href={txUrl(a.hash)} target="_blank" rel="noreferrer">{short(a.hash, 8)} ↗</a>}</div>
@@ -238,15 +242,15 @@ function SwapResult({ a, protect, lostKusd, price }: { a: Attempt; protect: bool
       <div className="dx-kv">
         <div><small>Quoted</small><span>{a.quoted ? `${fmt(a.quoted, tout.decimals, 5)} ${tout.symbol}` : "…"}</span></div>
         <div><small>Received</small><span>{a.out !== undefined ? `${fmt(a.out, tout.decimals, 5)} ${tout.symbol}` : pending ? "…" : "—"}</span></div>
-        <div><small>Gas</small><span>{a.gasWei !== undefined ? `${fmt(a.gasWei, 18, 6)} ETH` : "…"}</span></div>
+        <div><small>Gas</small><span>{a.gasWei !== undefined ? fmtGas(a.gasWei) : a.phase === "cancelled" || a.phase === "rejected" ? "0 ETH" : "…"}</span></div>
       </div>
-      <AnimatePresence>{saved && <motion.div className="dx-saved" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 18 }}><small>You saved</small><b>{lostKusd!.toLocaleString("en-US", { maximumFractionDigits: 2 })} kUSD</b></motion.div>}</AnimatePresence>
+      <AnimatePresence>{saved && <motion.div className="dx-saved" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 18 }}><small>You saved vs. the same swap unprotected</small><b>{loss!.kusd.toLocaleString("en-US", { maximumFractionDigits: 2 })} kUSD</b></motion.div>}</AnimatePresence>
     </motion.section>
   );
 }
 
 /* ------------------------------------------------------------------ intents */
-type Posted = { id: string; at: number; signed: SignedIntent; side: Side };
+type Posted = { id: string; at: number; signed: SignedIntent; side: Side; outBefore: bigint };
 function IntentsPanel({ w, acct, sqrtP, onConnect }: { w: Saved | null; acct: Bals | null; sqrtP: bigint | null; onConnect: () => void }) {
   const [amount, setAmount] = useState("300");
   const [windowSec, setWindowSec] = useState(120);
@@ -272,7 +276,7 @@ function IntentsPanel({ w, acct, sqrtP, onConnect }: { w: Saved | null; acct: Ba
   const post = async () => {
     if (!w || !amountIn) return;
     setBusy(true); setErr(null);
-    try { const { signed } = await signIntent(w, side, amountIn, { startBps: 30, endBps: 200, windowSec }); const id = await postIntent(signed); setPosted((p) => [{ id, at: Date.now(), signed, side }, ...p]); }
+    try { const before = await balances(w.account!); const { signed } = await signIntent(w, side, amountIn, { startBps: 30, endBps: 200, windowSec }); const id = await postIntent(signed); setPosted((p) => [{ id, at: Date.now(), signed, side, outBefore: side === "buy" ? before.weth : before.kusd }, ...p]); }
     catch (e: any) { setErr(shortError(e)); } finally { setBusy(false); }
   };
   const insufficient = !!amountIn && acct !== null && amountIn > acct.kusd;
@@ -302,6 +306,11 @@ function IntentsPanel({ w, acct, sqrtP, onConnect }: { w: Saved | null; acct: Ba
 function IntentCard({ p, events }: { p: Posted; events: RelayEvent[] }) {
   const tout = tokenOut(p.side), tin = tokenIn(p.side);
   const landed = events.find((e) => e.type === "fill_landed");
+  const [received, setReceived] = useState<bigint | null>(null);
+  useEffect(() => {
+    if (!landed) return;
+    balances(p.signed.account).then((b) => setReceived((p.side === "buy" ? b.weth : b.kusd) - p.outBefore)).catch(() => {});
+  }, [!!landed]);
   const submitted = events.filter((e) => e.type === "fill_submitted").length;
   const refused = events.filter((e) => e.type === "fill_refused").length;
   const steps = [
@@ -315,6 +324,7 @@ function IntentCard({ p, events }: { p: Posted; events: RelayEvent[] }) {
       <div className="dx-result-h"><span className="dx-tag">{fmt(p.signed.intent.maxIn, tin.decimals, 0)} {tin.symbol} → {tout.symbol}</span>{landed?.hash && <a href={txUrl(landed.hash as Hex)} target="_blank" rel="noreferrer">{short(landed.hash, 8)} ↗</a>}</div>
       <ol className="dx-track">{steps.map((s) => <li key={s.k} data-on={s.on}><motion.i animate={{ scale: s.on ? [1, 1.5, 1] : 1 }} transition={{ duration: 0.45 }} /><b>{s.k}</b><span>{s.d}</span></li>)}</ol>
       <div className="dx-kv">
+        {received !== null && <div><small>Received</small><span>{fmt(received, tout.decimals, 5)} {tout.symbol}</span></div>}
         <div><small>Minimum</small><span>{fmt(p.signed.intent.startOut, tout.decimals, 5)} → {fmt(p.signed.intent.endOut, tout.decimals, 5)} {tout.symbol}</span></div>
         <div><small>Your gas</small><span>0 ETH</span></div>
       </div>
