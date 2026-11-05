@@ -28,6 +28,8 @@ Refused at admission (never in a block, no hash, no gas): an extra SENDER frame 
 
 ## How it works
 
+![Kabuto architecture](docs/architecture.svg)
+
 ### Protected swap (`KabutoAccount.verifyPrice`)
 
 ```
