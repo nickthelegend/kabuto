@@ -11,7 +11,7 @@ import { frameStatus, p256Address, p256Tx, randomP256Key, sendFrameTx, senderFra
  * "normal wallet" in the side-by-side comparison. Never use these keys on a real network.
  */
 export type Saved = { ownerKey: Hex; owner: Address; funderKey: Hex; funder: Address; account?: Address; staked?: boolean };
-const KEY = "kabuto.devnet.wallet.v1";
+const KEY = "kabuto.devnet.account.v2"; // v2: accounts with open-intent support (verifyIntent)
 
 export function load(): Saved | null {
   try { const s = localStorage.getItem(KEY); return s ? (JSON.parse(s) as Saved) : null; } catch { return null; }

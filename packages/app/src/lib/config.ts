@@ -10,6 +10,7 @@ export const D = deployment as unknown as {
 
 export const QUOTER: Address = "0xeEa49CC6419125E2f706bf7f95Cf34ac7e93087D"; // v4 Quoter predeploy
 export const BOT_URL = (import.meta.env.VITE_BOT_URL as string | undefined) ?? "http://localhost:8787";
+export const RELAY_URL = (import.meta.env.VITE_RELAY_URL as string | undefined) ?? "http://localhost:8788";
 export const LEGACY_GAS_PRICE = 2_000_000n;
 export const FRAME_MAX_FEE = 2_000_000_000n;
 export const STAKE = 12_000_000_000_000_000n; // 0.012 ETH, strictly above the devnet minStake (0.01)

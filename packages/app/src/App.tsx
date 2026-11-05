@@ -7,6 +7,7 @@ import { forget, load, onboard, STEPS, type Saved, type Step } from "./lib/walle
 import { kabutoSwap, normalSwap, type Attempt } from "./lib/swap";
 import { registryAbi } from "./lib/abi";
 import { Landing } from "./Landing";
+import { postIntent, relayEvents, signIntent, type RelayEvent, type SignedIntent } from "./lib/intent";
 
 const short = (a?: string, n = 6) => (a ? `${a.slice(0, n)}…${a.slice(-4)}` : "");
 const explorerTx = (h?: string) => (h ? `${D.explorer}tx/${h}` : D.explorer);
@@ -58,6 +59,23 @@ function toBotEvent(d: any): BotEvent {
   const hashes = [d.frontRunHash ?? d.frontrun?.hash, d.backRunHash ?? d.backrun?.hash].filter(Boolean);
   const text = d.summary ?? d.message ?? (kind === "victim" ? `Saw a swap in the mempool${d.pinned ? " (price-pinned)" : ""}` : "Sandwich attempt");
   return { id: String(d.id ?? `${Date.now()}-${Math.random()}`), at: Date.now(), kind, text, pnl: pnl !== undefined ? String(pnl) : undefined, hashes };
+}
+
+/* ------------------------------------------------------------------ intent relay (packages/filler) */
+export type PostedIntent = { id: string; at: number; signed: SignedIntent; quoted: bigint; side: Side; events: RelayEvent[] };
+function useRelay() {
+  const [state, setState] = useState<"connecting" | "live" | "offline">("connecting");
+  const [events, setEvents] = useState<RelayEvent[]>([]);
+  useEffect(() => {
+    let es: EventSource | null = null;
+    try { es = relayEvents(); } catch { setState("offline"); return; }
+    es.onopen = () => setState("live");
+    es.onerror = () => setState("offline");
+    const on = (m: MessageEvent) => { try { setEvents((p) => [JSON.parse(m.data) as RelayEvent, ...p].slice(0, 200)); } catch { /* ignore */ } };
+    for (const t of ["intent_posted", "fill_submitted", "fill_landed", "fill_refused", "fill_replaced"]) es.addEventListener(t, on as EventListener);
+    return () => es?.close();
+  }, []);
+  return { state, events };
 }
 
 /* ------------------------------------------------------------------ app */
@@ -177,7 +195,9 @@ function Wallet({ w, chain, onReset }: { w: Saved; chain: ReturnType<typeof useC
   const [nbals, setNbals] = useState<{ eth: bigint; kusd: bigint; weth: bigint } | null>(null);
   const [stake, setStake] = useState<bigint | null>(null);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
+  const [intents, setIntents] = useState<PostedIntent[]>([]);
   const bot = useBot();
+  const relay = useRelay();
 
   const refresh = useCallback(async () => {
     try {
@@ -200,9 +220,9 @@ function Wallet({ w, chain, onReset }: { w: Saved; chain: ReturnType<typeof useC
     <div className="grid">
       <div>
         <Account w={w} bals={bals} stake={stake} onReset={onReset} />
-        <SwapCard w={w} sqrtP={chain.sqrtP} bals={bals} nbals={nbals} onAttempt={upsert} />
+        <SwapCard w={w} sqrtP={chain.sqrtP} bals={bals} nbals={nbals} onAttempt={upsert} onIntent={(p) => setIntents((x) => [p, ...x])} relayLive={relay.state === "live"} />
       </div>
-      <Lane chain={chain} attempts={attempts} bot={bot} />
+      <Lane chain={chain} attempts={attempts} bot={bot} intents={intents} relay={relay} />
     </div>
   );
 }
@@ -232,13 +252,16 @@ function Account({ w, bals, stake, onReset }: { w: Saved; bals: any; stake: bigi
   );
 }
 
-function SwapCard({ w, sqrtP, bals, nbals, onAttempt }: { w: Saved; sqrtP: bigint | null; bals: any; nbals: any; onAttempt: (a: Attempt) => void }) {
+function SwapCard({ w, sqrtP, bals, nbals, onAttempt, onIntent, relayLive }: { w: Saved; sqrtP: bigint | null; bals: any; nbals: any; onAttempt: (a: Attempt) => void; onIntent: (p: PostedIntent) => void; relayLive: boolean }) {
+  const [mode, setMode] = useState<"protected" | "intent">("protected");
+  const [windowSec, setWindowSec] = useState(120);
+  const [intentErr, setIntentErr] = useState<string | null>(null);
   const [side, setSide] = useState<Side>("buy");
   const [amount, setAmount] = useState("300");
   const [bandBps, setBandBps] = useState(50);
   const [q, setQ] = useState<bigint | null>(null);
   const [qErr, setQErr] = useState<string | null>(null);
-  const [busy, setBusy] = useState<"kabuto" | "normal" | null>(null);
+  const [busy, setBusy] = useState<"kabuto" | "normal" | "intent" | null>(null);
   const signedCenter = useRef<bigint | null>(null);
   const tin = tokenIn(side), tout = tokenOut(side);
 
@@ -262,10 +285,25 @@ function SwapCard({ w, sqrtP, bals, nbals, onAttempt }: { w: Saved; sqrtP: bigin
     } finally { setBusy(null); signedCenter.current = null; }
   };
 
+  const post = async () => {
+    if (!amountIn) return;
+    setBusy("intent"); setIntentErr(null);
+    try {
+      const { signed, quoted } = await signIntent(w, side, amountIn, { startBps: 30, endBps: 200, windowSec });
+      const id = await postIntent(signed);
+      onIntent({ id, at: Date.now(), signed, quoted, side, events: [] });
+    } catch (e: any) { setIntentErr(e?.message ?? String(e)); }
+    finally { setBusy(null); }
+  };
+
   return (
     <section className="card">
       <div className="card-h"><h2>Swap · Uniswap v4</h2><span className="chip">WETH / kUSD · 0.30%</span></div>
       <div className="card-b">
+        <div className="modes" role="tablist" aria-label="How to swap">
+          <button role="tab" aria-selected={mode === "protected"} onClick={() => setMode("protected")}><b>Protected swap</b><span>You route it. Sandwich = invalid, 0 gas.</span></button>
+          <button role="tab" aria-selected={mode === "intent"} onClick={() => setMode("intent")}><b>Post an intent</b><span>Anyone routes it. Fillers pay the gas.</span></button>
+        </div>
         <div className="seg" role="group" aria-label="Direction">
           <button aria-pressed={side === "buy"} onClick={() => setSide("buy")}>Buy WETH</button>
           <button aria-pressed={side === "sell"} onClick={() => setSide("sell")}>Sell WETH</button>
@@ -278,13 +316,33 @@ function SwapCard({ w, sqrtP, bals, nbals, onAttempt }: { w: Saved; sqrtP: bigin
           </div>
           <div className="out"><span>You get (Uniswap v4 Quoter)</span><b>{q !== null ? `${fmt(q, tout.decimals, side === "buy" ? 5 : 2)} ${tout.symbol}` : qErr ?? "…"}</b></div>
         </div>
-        <Band sqrtP={sqrtP} bandBps={bandBps} setBandBps={setBandBps} signed={signedCenter.current} />
-        {short_ && <div className="err">Not enough {tin.symbol} in the Kabuto account.</div>}
-        <button className="btn shu" disabled={!amountIn || !!busy || !!short_} onClick={() => go("kabuto")}>{busy === "kabuto" ? "Pinned swap in flight…" : "Swap with Kabuto"}</button>
-        <button className="btn ghost" disabled={!amountIn || !!busy || (nbals && (side === "buy" ? nbals.kusd : nbals.weth) < (amountIn ?? 0n))} onClick={() => go("normal")}>
-          {busy === "normal" ? "Normal swap in flight…" : `Same swap from a normal wallet (${(Math.max(bandBps, 100) / 100).toFixed(1)}% slippage)`}
-        </button>
-        <p className="hint">The normal wallet is an ordinary EOA ({short(w.funder, 6)}) sending the same router call to the public mempool with a slippage floor.</p>
+        {mode === "protected" ? (
+          <>
+            <Band sqrtP={sqrtP} bandBps={bandBps} setBandBps={setBandBps} signed={signedCenter.current} />
+            {short_ && <div className="err">Not enough {tin.symbol} in the Kabuto account.</div>}
+            <button className="btn shu" disabled={!amountIn || !!busy || !!short_} onClick={() => go("kabuto")}>{busy === "kabuto" ? "Pinned swap in flight…" : "Swap with Kabuto"}</button>
+            <button className="btn ghost" disabled={!amountIn || !!busy || (nbals && (side === "buy" ? nbals.kusd : nbals.weth) < (amountIn ?? 0n))} onClick={() => go("normal")}>
+              {busy === "normal" ? "Normal swap in flight…" : `Same swap from a normal wallet (${(Math.max(bandBps, 100) / 100).toFixed(1)}% slippage)`}
+            </button>
+            <p className="hint">The normal wallet is an ordinary EOA ({short(w.funder, 6)}) sending the same router call to the public mempool with a slippage floor.</p>
+          </>
+        ) : (
+          <>
+            <div className="intent-box">
+              <div className="row2"><span>Minimum you accept</span><b className="mono">{q ? `${fmt((q * 9970n) / 10_000n, tout.decimals, 5)} → ${fmt((q * 9800n) / 10_000n, tout.decimals, 5)} ${tout.symbol}` : "…"}</b></div>
+              <div className="row2"><span>Decays over</span>
+                <span className="seg mini" role="group" aria-label="Auction window">
+                  {[60, 120, 300].map((s) => <button key={s} aria-pressed={windowSec === s} onClick={() => setWindowSec(s)}>{s < 120 ? `${s}s` : `${s / 60} min`}</button>)}
+                </span>
+              </div>
+              <p className="hint">You sign one digest: up to {amount || "0"} {tin.symbol} out, at least the decaying minimum back. No transaction, no gas. Fillers race to complete it through Uniswap v4; your account rejects any fill that breaks the shape.</p>
+            </div>
+            {short_ && <div className="err">Not enough {tin.symbol} in the Kabuto account.</div>}
+            {intentErr && <div className="err" role="alert">{intentErr}</div>}
+            <button className="btn moon-btn" disabled={!amountIn || !!busy || !!short_} onClick={post}>{busy === "intent" ? "Signing…" : "Sign intent · no gas"}</button>
+            {!relayLive && <p className="hint">Intent relay offline. Start it with <code>pnpm --dir packages/filler relay</code> and a filler with <code>pnpm --dir packages/filler filler</code>.</p>}
+          </>
+        )}
       </div>
     </section>
   );
@@ -319,13 +377,14 @@ function Band({ sqrtP, bandBps, setBandBps, signed }: { sqrtP: bigint | null; ba
 }
 
 /* ------------------------------------------------------------------ lane */
-function Lane({ chain, attempts, bot }: { chain: ReturnType<typeof useChain>; attempts: Attempt[]; bot: ReturnType<typeof useBot> }) {
+function Lane({ chain, attempts, bot, intents, relay }: { chain: ReturnType<typeof useChain>; attempts: Attempt[]; bot: ReturnType<typeof useBot>; intents: PostedIntent[]; relay: ReturnType<typeof useRelay> }) {
   const saved = attempts.filter((a) => a.wallet === "kabuto" && (a.phase === "cancelled" || a.phase === "rejected")).length;
   const price = chain.sqrtP ? priceFromSqrt(chain.sqrtP) : null;
   type Row = { at: number; el: JSX.Element };
   const rows: Row[] = [
     ...attempts.map((a) => ({ at: a.startedAt, el: <AttemptRow key={a.id} a={a} /> })),
     ...bot.events.map((e) => ({ at: e.at, el: <BotRow key={e.id} e={e} /> })),
+    ...intents.map((p) => ({ at: p.at, el: <IntentRow key={p.id} p={p} events={relay.events.filter((e) => e.intentId === p.id)} /> })),
   ].sort((x, y) => y.at - x.at);
   return (
     <section className="card" aria-label="Mempool lane">
@@ -381,6 +440,39 @@ function AttemptRow({ a }: { a: Attempt }) {
       <div className="steps">
         {a.phaseLog.map((p, i) => <span key={i} className={i === a.phaseLog.length - 1 ? "on" : ""}>{PHASES[p.phase as Attempt["phase"]] ?? p.phase}</span>)}
         {a.hash && <a className="hashlink" style={{ marginLeft: "auto" }} href={explorerTx(a.hash)} target="_blank" rel="noreferrer">{short(a.hash, 10)}</a>}
+      </div>
+    </li>
+  );
+}
+
+function IntentRow({ p, events }: { p: PostedIntent; events: RelayEvent[] }) {
+  const tin = tokenIn(p.side), tout = tokenOut(p.side);
+  const ev = [...events].sort((a, b) => a.time - b.time);
+  const landed = ev.find((e) => e.type === "fill_landed");
+  const refused = ev.filter((e) => e.type === "fill_refused");
+  const submitted = ev.filter((e) => e.type === "fill_submitted");
+  const status = landed ? "Filled" : submitted.length ? `${submitted.length} filler${submitted.length > 1 ? "s" : ""} racing` : "Waiting for fillers";
+  const got = landed && (landed as any).amountOut !== undefined ? BigInt(String((landed as any).amountOut)) : null;
+  return (
+    <li>
+      <div className="ev-top">
+        <span className="ev-who"><i style={{ background: "var(--gold)" }} />Open intent<span className="faint mono" style={{ fontWeight: 400, fontSize: 12 }}>nonce {String(p.signed.intent.nonce)}</span></span>
+        <span className={`chip ${landed ? "ok" : "gold"}`}>{status}</span>
+      </div>
+      <div className="ev-title">{landed ? "A filler completed your intent and paid the gas." : "Signed, posted, no gas spent. Fillers are quoting it now."}</div>
+      <div className="ev-grid">
+        <div><small>Up to</small><b>{fmt(p.signed.intent.maxIn, tin.decimals, 4)} {tin.symbol}</b></div>
+        <div><small>Min (decaying)</small><b>{fmt(p.signed.intent.startOut, tout.decimals, 5)} → {fmt(p.signed.intent.endOut, tout.decimals, 5)}</b></div>
+        <div><small>Got</small><b>{got !== null ? `${fmt(got, tout.decimals, 5)} ${tout.symbol}` : landed ? "landed" : "…"}</b></div>
+        <div><small>Refused fills</small><b>{refused.length}</b></div>
+      </div>
+      <div className="steps">
+        {ev.map((e, i) => (
+          <span key={i} className={i === ev.length - 1 ? "on" : ""} title={e.reason ?? ""}>
+            {e.type.replace("_", " ")}{(e as any).filler ? ` · ${String((e as any).filler)}` : ""}{e.type === "fill_refused" && e.reason ? ` · ${String(e.reason).slice(0, 40)}` : ""}
+          </span>
+        ))}
+        {landed?.hash && <a className="hashlink" style={{ marginLeft: "auto" }} href={explorerTx(landed.hash)} target="_blank" rel="noreferrer">{short(landed.hash, 10)}</a>}
       </div>
     </li>
   );
