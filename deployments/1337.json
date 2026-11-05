@@ -24,7 +24,7 @@
   "wethIs0": true,
   "deployedAt": "2026-11-05T16:19:39.561Z",
   "block": 404274,
-  "paymaster": "0xfa10b5624369be32e44ee3cc7e6a90adde9b3fa0",
+  "paymaster": "0x2b594f5939149537673d7d8f797186e9a27afdf9",
   "paymasterFees": {
     "kUSD": "1500000",
     "WETH": "500000000000000"

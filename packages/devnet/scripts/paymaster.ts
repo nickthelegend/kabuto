@@ -27,14 +27,15 @@ const FEE_KUSD = parseUnits("1.5", 6);
 const FEE_WETH = parseEther("0.0005");
 
 if (!d.paymaster || process.argv.includes("--fresh")) {
-  while ((await pub.getBalance({ address: deployer })) < parseEther("0.6")) {
+  const PM_FUND = parseEther(process.env.PM_FUND ?? "0.15");
+  while ((await pub.getBalance({ address: deployer })) < PM_FUND + parseEther("0.05")) {
     const pk = generatePrivateKey(); const a = privateKeyToAccount(pk).address;
     await faucet(a);
     const b = await pub.getBalance({ address: a });
     await sendLegacy(pk as Hex, { to: deployer, value: b - 21_000n * LEGACY_GAS_PRICE * 2n, gas: 21_000n });
   }
   const fee0 = d.wethIs0 ? FEE_WETH : FEE_KUSD, fee1 = d.wethIs0 ? FEE_KUSD : FEE_WETH;
-  const pm = await deploy(deployerPk, "KabutoPaymaster", [PREDEPLOYS.poolManager, d.router, d.poolId, d.poolKey.currency0, d.poolKey.currency1, fee0, fee1], parseEther("0.5"));
+  const pm = await deploy(deployerPk, "KabutoPaymaster", [PREDEPLOYS.poolManager, d.router, d.poolId, d.poolKey.currency0, d.poolKey.currency1, fee0, fee1], PM_FUND);
   log("KabutoPaymaster", pm);
   await sendLegacy(deployerPk, { to: pm, value: parseEther("0.012"), data: encodeFunctionData({ abi: pmAbi, functionName: "stake", args: [PREDEPLOYS.stakingRegistry, 86400] }) });
   log("paymaster staked");
