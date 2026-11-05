@@ -38,6 +38,18 @@ const pad = (n:bigint) => n.toString(16).padStart(64,'0');
 function assertHash(h: Hex) { if (!/^0x[0-9a-fA-F]{64}$/.test(h)) throw new Error('Expected a 32-byte hash'); }
 
 /** Create a secp256k1 owner or operator signer. Never persist private keys in SDK state. */
+/**
+ * MAX_VERIFY_GAS (100,000) caps the SUM of every VERIFY frame's execution limit plus a per-signature cost:
+ * 2,800 for secp256k1, 6,700 for P256 (the ERC-8421 sidecar's SIGNATURE_VERIFICATION_GAS_COST).
+ */
+export const MAX_VERIFY_GAS = 100_000n;
+export const SIGNATURE_GAS: Record<Scheme, bigint> = { secp256k1: 2_800n, p256: 6_700n };
+export const FILLER_PAY_GAS = 12_000n;
+/** Execution limit left for verifyIntent once the filler's pay() frame and both signatures are paid for. */
+export function intentVerifyBudget(ownerScheme: Scheme): bigint {
+  return MAX_VERIFY_GAS - SIGNATURE_GAS[ownerScheme] - SIGNATURE_GAS.secp256k1 - FILLER_PAY_GAS;
+}
+
 export function secp256k1Signer(privKeyHex: Hex): KabutoSigner {
   const address = privateKeyToAccount(privKeyHex).address;
   return { address, scheme:'secp256k1', async signHash(hash32) {
@@ -186,7 +198,7 @@ function createKabutoImpl({rpcUrl=devnet1337.gateway,deployment=devnet1337}: {rp
     const zfo=i.tokenIn.toLowerCase()===poolKey.currency0.toLowerCase();
     const before=await pub.readContract({address:i.tokenOut,abi:erc20Abi,functionName:'balanceOf',args:[account]});
     const operator=privateKeyToAccount(operatorKey).address;
-    const frames=[verify(encodeFunctionData({abi:accountAbi,functionName:'verifyIntent',args:[i]}),82_000n,'EXECUTION'),frame(profile,'VERIFY',{scope:'PAYMENT',target:filler,execution:12_000n,data:encodeFunctionData({abi:fillerAbi,functionName:'pay'})}),sender(i.tokenIn,encodeFunctionData({abi:erc20Abi,functionName:'transfer',args:[filler,attack==='over-max'?i.maxIn+1n:amountIn]}),80_000n,100_000n,attack!=='no-atomic'),...(attack==='extra-sender'?[sender(i.tokenIn,encodeFunctionData({abi:erc20Abi,functionName:'transfer',args:[operator,1n]}),80_000n,100_000n,true)]:[]),frame(profile,'DEFAULT',{target:filler,execution:400_000n,state:200_000n,flags:4,data:encodeFunctionData({abi:fillerAbi,functionName:'fill',args:[poolKey,zfo,amountIn,account,attack==='underpay'?i.endOut/2n:payOut]})}),sender(null,encodeFunctionData({abi:accountAbi,functionName:'settleIntent',args:[i.tokenOut,before,i.startOut,i.endOut,i.startTime,i.deadline]}),80_000n)];
+    const frames=[verify(encodeFunctionData({abi:accountAbi,functionName:'verifyIntent',args:[i]}),intentVerifyBudget(scheme),'EXECUTION'),frame(profile,'VERIFY',{scope:'PAYMENT',target:filler,execution:12_000n,data:encodeFunctionData({abi:fillerAbi,functionName:'pay'})}),sender(i.tokenIn,encodeFunctionData({abi:erc20Abi,functionName:'transfer',args:[filler,attack==='over-max'?i.maxIn+1n:amountIn]}),80_000n,100_000n,attack!=='no-atomic'),...(attack==='extra-sender'?[sender(i.tokenIn,encodeFunctionData({abi:erc20Abi,functionName:'transfer',args:[operator,1n]}),80_000n,100_000n,true)]:[]),frame(profile,'DEFAULT',{target:filler,execution:400_000n,state:200_000n,flags:4,data:encodeFunctionData({abi:fillerAbi,functionName:'fill',args:[poolKey,zfo,amountIn,account,attack==='underpay'?i.endOut/2n:payOut]})}),sender(null,encodeFunctionData({abi:accountAbi,functionName:'settleIntent',args:[i.tokenOut,before,i.startOut,i.endOut,i.startTime,i.deadline]}),80_000n)];
     let tx=newTx({chainId:1337,sender:account,nonceSeq:i.nonce,frames,signatures:[{scheme:scheme==='p256'?profile.sigSchemes.P256:profile.sigSchemes.SECP256K1,signer:owner,msg:digest,signature},{scheme:profile.sigSchemes.SECP256K1,signer:operator,msg:'0x' as Hex,signature:'0x' as Hex}],fees:{maxFeePerGas:tip*2n>2_000_000_000n?tip*2n:2_000_000_000n,maxPriorityFeePerGas:tip}});
     return signTx(profile,tx,operatorKey,1);
   }
