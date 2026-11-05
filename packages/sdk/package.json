@@ -1,0 +1,34 @@
+{
+  "name": "@kabuto/sdk",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "author": "Nivesh Gajengi",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "test": "vitest run --testTimeout=180000 --hookTimeout=180000",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "viem": "^2.57.7",
+    "@forshtat/hegota-support": "0.0.1",
+    "@noble/curves": "1.9.1"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^5.6.3",
+    "vitest": "^3.2.4",
+    "@types/node": "^22.10.0"
+  }
+}
