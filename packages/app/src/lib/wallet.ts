@@ -19,6 +19,13 @@ export function load(): Saved | null {
 function save(s: Saved) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* private mode: session only */ } }
 export function forget() { try { localStorage.removeItem(KEY); } catch { /* ignore */ } }
 
+/** First meaningful line of a viem/RPC error, never a wall of request bodies. */
+export function shortError(e: any): string {
+  const m = String(e?.shortMessage ?? e?.details ?? e?.message ?? e);
+  const details = e?.details ? ` (${String(e.details).slice(0, 120)})` : "";
+  return (m.split("\n")[0] + (m === e?.details ? "" : details)).slice(0, 220);
+}
+
 export type Step = { id: string; label: string; state: "todo" | "doing" | "done" | "error"; detail?: string; hash?: Hex };
 export const STEPS: Step[] = [
   { id: "keys", label: "Create a P256 signing key on this device", state: "todo" },
@@ -33,7 +40,7 @@ export async function onboard(onStep: (id: string, patch: Partial<Step>) => void
   const run = async <T,>(id: string, fn: () => Promise<T>) => {
     onStep(id, { state: "doing" });
     try { const r = await fn(); onStep(id, { state: "done" }); return r; }
-    catch (e: any) { onStep(id, { state: "error", detail: e?.message ?? String(e) }); throw e; }
+    catch (e: any) { onStep(id, { state: "error", detail: shortError(e) }); throw e; }
   };
   await run("keys", async () => {
     if (!s) {

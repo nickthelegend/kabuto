@@ -3,7 +3,7 @@ import { parseUnits, type Address, type Hex } from "viem";
 import { D, BOT_URL } from "./lib/config";
 import { pub } from "./lib/chain";
 import { balances, bandFor, fmt, priceFromSqrt, quote, sqrtPrice, tokenIn, tokenOut, type Side } from "./lib/market";
-import { forget, load, onboard, STEPS, type Saved, type Step } from "./lib/wallet";
+import { forget, load, onboard, shortError, STEPS, type Saved, type Step } from "./lib/wallet";
 import { kabutoSwap, normalSwap, type Attempt } from "./lib/swap";
 import { registryAbi, tokenAbi } from "./lib/abi";
 import { sendLegacy } from "./lib/chain";
@@ -150,7 +150,7 @@ function Onboarding({ onDone }: { onDone: (w: Saved) => void }) {
     try {
       const w = await onboard((id, patch) => setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s))));
       onDone(w);
-    } catch (e: any) { setErr(e?.message ?? String(e)); }
+    } catch (e: any) { setErr(shortError(e)); }
     finally { setBusy(false); }
   };
   const resumable = !!load();

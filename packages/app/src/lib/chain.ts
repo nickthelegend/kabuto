@@ -9,7 +9,8 @@ export const pub = createPublicClient({ chain: devnet, transport: http(D.gateway
 export async function sendLegacy(pk: Hex, tx: { to?: Address; data?: Hex; value?: bigint }, headroom = 3n) {
   const account = privateKeyToAccount(pk);
   const w = createWalletClient({ account, chain: devnet, transport: http(D.gateway) });
-  const est = await pub.estimateGas({ account, to: tx.to, data: tx.data, value: tx.value ?? 0n });
+  // estimate at the legacy price we actually pay, so a small balance is not mistaken for insufficient funds
+  const est = await pub.estimateGas({ account, to: tx.to, data: tx.data, value: tx.value ?? 0n, gasPrice: LEGACY_GAS_PRICE } as any);
   const gas = (est * headroom) / 2n + 50_000n;
   const hash = await w.sendTransaction({ to: tx.to ?? null, data: tx.data, value: tx.value ?? 0n, gas, gasPrice: LEGACY_GAS_PRICE, type: "legacy" } as any);
   const r = await pub.waitForTransactionReceipt({ hash, timeout: 120_000 });

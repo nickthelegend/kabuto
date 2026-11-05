@@ -33,6 +33,32 @@ try {
     await pause(4000);
     await page.getByRole("button", { name: /Same swap from a normal wallet/ }).click();
     await page.waitForTimeout(25_000);
+  } else if (scene === "full") {
+    const setAmount = async (v) => { await page.fill("#amt", ""); await page.type("#amt", v, { delay: 60 }); await pause(2500); };
+    const feedHas = (re) => page.waitForFunction((src) => new RegExp(src).test(document.querySelector(".feed")?.innerText ?? ""), re.source, { timeout: 240_000 });
+    await page.goto(url + "/#/app");
+    await pause(2000);
+    await page.getByRole("button", { name: /Create my Kabuto account|Resume setup/ }).click();
+    await page.waitForSelector(".modes", { timeout: 300_000 });
+    await pause(2500);
+    await page.getByRole("button", { name: /test kUSD/ }).click();
+    await page.waitForFunction(() => !/minting/.test([...document.querySelectorAll("button")].map((b) => b.innerText).join(" ")), null, { timeout: 120_000 });
+    await pause(6000);
+    // 1. the ordinary wallet: the live bot sandwiches it
+    await setAmount("1500");
+    await page.getByRole("button", { name: /Same swap from a normal wallet/ }).click();
+    await feedHas(/Filled .*worse|Filled at the quoted/);
+    await pause(6000);
+    // 2. the same swap with Kabuto: the bot front-runs, the swap is never included, 0 gas
+    await page.getByRole("button", { name: "Swap with Kabuto" }).click();
+    await feedHas(/Never included|Refused at the door|Included\n/);
+    await pause(7000);
+    // 3. open intent: sign, a filler races and fills
+    await page.getByText("Post an intent").first().click();
+    await setAmount("300");
+    await page.getByRole("button", { name: /Sign intent/ }).click();
+    await feedHas(/Filled\nA filler completed/);
+    await pause(7000);
   } else if (scene === "intent") {
     await page.goto(url + "/#/app");
     await page.getByText("Post an intent").first().click();
