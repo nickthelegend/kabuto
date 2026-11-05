@@ -4,7 +4,7 @@
 
 | Suite | Command | Passed | Failed | Other |
 | --- | --- | ---: | ---: | --- |
-| Foundry | `forge test --root packages/contracts` | 10 tests | 0 | 2 fuzz tests ran 256 cases each (512 fuzz executions) |
+| Foundry | `forge test --root packages/contracts` | 19 tests (10 core + 9 KabutoGuard) | 0 | 2 fuzz tests ran 256 cases each (512 fuzz executions) |
 | Public devnet | `pnpm --dir packages/e2e test` | 6 cases | 4 cases | One full run; targeted reruns confirmed 3 attack refusals and reproduced the inclusion timeouts |
 | Soak smoke run | `pnpm --dir packages/e2e soak 1` | 0 rounds | 0 rounds | Own account deployed and staked tx admitted, but it stayed `New` without a receipt |
 
@@ -34,6 +34,8 @@ Recorded with `packages/demo/record2.mjs` against https://kabuto-self.vercel.app
 | Film take, protection on | 0x02d38de2…5a63 | Bot front-ran it (block 407,292, index 0); `Cancelled`, 0 gas |
 | Intent, 300 kUSD → WETH | [0xdfd70b01…c065](https://explorer.altmempool.wtf/tx/0xdfd70b014486b1d92669271318502d159570de709be0dbb2a99682da49b8c065) | Filled by the hosted filler, which paid the gas; account received 0.00886 WETH (minimum 0.00885) |
 | Miss, recorded honestly | 0x76d52215…3fd1 | Victim landed one block before the bot's front-run: no sandwich (the viewer prints TOO SLOW) |
+
+KabutoGuard live (`pnpm --dir packages/devnet exec tsx src/guard.ts --fresh`): hook `0x9A485379e6307A12cF380D9F783296Aa1E570080`, pinned frame-tx swap [0xd1962486…](https://explorer.altmempool.wtf/tx/0xd1962486165f1c4afdf3aec80ad6f2c6f882063403ad81e8469165e68472f861) `OnChain`; plain legacy swap [0x8fd351e2…](https://explorer.altmempool.wtf/tx/0x8fd351e2cffefc53e3680916bdb4007f24cbbc9b601ae37b13a80287e3291829) reverted with `NotFrameTx()` (checked by replaying the call). Frame-opcode probe: `FrameProbe.sol` read SENDER, frame count, index, target and mode from inside a SENDER frame (`0x25d65d67…947a`); the same reads fail in a legacy transaction.
 
 Arkiv: `pnpm --dir packages/filler exec vitest run test/arkiv.test.ts` → 2 passed (byte round trip, live public Rabdi read), 1 skipped (live write; needs a funded writer).
 

@@ -22,6 +22,12 @@ Kabuto builds unsandwichable swaps and open intents on Uniswap v4, on the Ethere
 3. **Quoter is `nonpayable` and reverts internally.** It works with `eth_call`, but typed clients (viem) treat it as a write. Marking the docs with "call it with simulateContract / eth_call" up front would avoid a common first-time error.
 4. **Price-band math.** Every integration that pins a price re-implements "±x% of price → sqrtPriceX96 bounds". A tiny helper in the SDK (`sqrtPriceBand(sqrtPriceX96, bps)`) would prevent off-by-two mistakes (a price band of ±x% is roughly ±x/2% in sqrt space).
 
+## A hook that reads the transaction it runs in
+
+`KabutoGuardHook` is a v4 `beforeSwap` hook that inspects the enclosing EIP-8141 frame transaction and only admits swaps whose price was pinned in an earlier VERIFY frame (a pool that cannot be sandwiched; live on the EF devnet). Two v4 notes from building it:
+- **Hook errors are wrapped.** A revert in `beforeSwap` surfaces as `WrappedError(hook, selector, reason, details)`; viem's estimate path couldn't decode it ("Failed to convert string_length"). A short docs note on decoding wrapped hook errors client-side would help.
+- **Hook address mining.** We mined a CREATE2 salt for the BEFORE_SWAP flag with a ten-line loop; a canonical miner in v4-periphery that doesn't pull in the whole test toolchain would save time.
+
 ## What we would love next
 
 - Hooks have `beforeSwap`; frame transactions add a step **before the transaction exists**. A guide on using `extsload` from account-abstraction validation (EIP-8141 VERIFY frames, ERC-4337 `validateUserOp` with staked entities) would open a new class of "validate against Uniswap state, pay nothing on failure" integrations.

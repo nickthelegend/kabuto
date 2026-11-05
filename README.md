@@ -137,6 +137,23 @@ sequenceDiagram
   Note over A: settle reverts if received < decayed minimum → whole atomic batch rolls back
 ```
 
+### KabutoGuard: a Uniswap v4 pool that cannot be sandwiched (`KabutoGuardHook`)
+
+A v4 hook whose `beforeSwap` reads **the transaction it is running in**. Inside an EIP-8141 transaction, a contract called from a SENDER frame (here a hook, called by the PoolManager during `unlock`) can read `TXPARAM`, `FRAMEPARAM` and `FRAMEDATACOPY`. The hook requires an **earlier, successful VERIFY frame by the sender that pinned this pool's price**, with a band no wider than 2%. Otherwise it reverts:
+
+- a plain (legacy / 1559) transaction, which is what a sandwich bot sends → `NotFrameTx()`
+- no pin, a pin for another pool, a later or failed VERIFY frame, or a pin on another account → `NoPricePin()`
+- a band wider than `MAX_BAND_BPS` → `BandTooWide()`
+
+So in this pool every swap is price-pinned: a front-run makes the honest swap invalid, and a bot's plain transaction can't trade at all. The hook does not need to trust the sender's account code: an account whose `verifyPrice` doesn't really check only fails to protect itself (see the contract's comment). Only possible with frame transactions.
+
+| Live (Nov 6 2026) | |
+|---|---|
+| Hook (BEFORE_SWAP flag, CREATE2-mined) | `0x9A485379e6307A12cF380D9F783296Aa1E570080` |
+| Guarded WETH/kUSD pool | `0x4869421e2f2f11bcdecdf1168a5b6183eb00c123cc1d5181b8712af074b91725` |
+| Price-pinned frame-tx swap | [`0xd1962486…f861`](https://explorer.altmempool.wtf/tx/0xd1962486165f1c4afdf3aec80ad6f2c6f882063403ad81e8469165e68472f861): `OnChain`, all frames successful |
+| Plain legacy swap through the same router | [`0x8fd351e2…1829`](https://explorer.altmempool.wtf/tx/0x8fd351e2cffefc53e3680916bdb4007f24cbbc9b601ae37b13a80287e3291829): mined, **reverted**; revert data is v4's wrapped hook error carrying `NotFrameTx()` (`0x2e55cc19`) |
+
 ### The swap can pay its own gas (`KabutoPaymaster.sponsor`)
 
 The paymaster's VERIFY frame inspects the transaction with `TXPARAM`, `FRAMEPARAM` and `FRAMEDATACOPY`. It approves payment only for a price-pinned approve/swap/fee batch on its own pool (checked against the full v4 PoolKey hash) that repays it in the output token. It also checks the price band and the sender's balance, so a moved price makes the transaction invalid instead of costing the sponsor gas.
@@ -156,6 +173,7 @@ The paymaster's VERIFY frame inspects the transaction with `TXPARAM`, `FRAMEPARA
 | An underpaying fill rolls back | `settleIntent` ([:146](packages/contracts/src/KabutoAccount.sol#L146)), Dutch decay ([:157](packages/contracts/src/KabutoAccount.sol#L157)) | Foundry + live `underpay` (balance identical at blocks N−1 and N) | [`0xb0a236cc…5e64`](https://explorer.altmempool.wtf/tx/0xb0a236ccb9451dcefe266fb3f1db4d12a72b86d1b21fa832fa0c4fac11685e64) |
 | A third-party filler pays the gas | `KabutoFiller.pay` ([KabutoFiller.sol:43](packages/contracts/src/KabutoFiller.sol#L43)) | live e2e intent case | [`0xefebea6a…cce3`](https://explorer.altmempool.wtf/tx/0xefebea6a0a5c7b3e75229c5a9980ee823cd1273945e036a897d12f00fb38cce3) |
 | A swap can pay its own gas | `KabutoPaymaster.sponsor` ([KabutoPaymaster.sol:80](packages/contracts/src/KabutoPaymaster.sol#L80)) | Foundry paymaster codes 1–13 | [`0x7559cff5…7cde`](https://explorer.altmempool.wtf/tx/0x7559cff5fa0398cc452800c66261f03c90bf9925164f5e4c51628c4eef707cde) account ETH moved 0 wei |
+| A v4 pool where plain transactions cannot swap and every swap is price-pinned | `KabutoGuardHook.beforeSwap` ([KabutoGuardHook.sol](packages/contracts/src/KabutoGuardHook.sol)) | `packages/contracts/test/KabutoGuard.t.sol` (9 tests) | pinned swap [`0xd1962486…`](https://explorer.altmempool.wtf/tx/0xd1962486165f1c4afdf3aec80ad6f2c6f882063403ad81e8469165e68472f861) OnChain; legacy swap [`0x8fd351e2…`](https://explorer.altmempool.wtf/tx/0x8fd351e2cffefc53e3680916bdb4007f24cbbc9b601ae37b13a80287e3291829) reverted `NotFrameTx()` |
 | Owner keys use the native P256 scheme | `sigparam(0, RESOLVED_SIGNER) == owner` | live P256 case | [`0xfe705666…b7d3`](https://explorer.altmempool.wtf/tx/0xfe70566620a7e2798002ea376b598d7a6614fee279c861b2cc6146978178b7d3) |
 | All of this fits the 100k validation-gas cap | `MAX_VERIFY_GAS` + per-signature cost (secp256k1 2,800, P256 6,700) in [packages/sdk/src/index.ts:45](packages/sdk/src/index.ts#L45) | the live P256 intent fill | [`0xefebea6a…cce3`](https://explorer.altmempool.wtf/tx/0xefebea6a0a5c7b3e75229c5a9980ee823cd1273945e036a897d12f00fb38cce3) |
 
@@ -198,7 +216,7 @@ Full API: [packages/sdk/README.md](packages/sdk/README.md).
 
 | Suite | Result |
 |---|---|
-| Foundry (`forge test --root packages/contracts`) | 10 tests, 0 failed, 2 fuzz tests × 256 runs. Frame opcodes mocked at the `HegotaSupport` helper addresses; swaps against the real v4 PoolManager bytecode. Found two shape-check gaps, both fixed with regression tests and the paymaster redeployed. |
+| Foundry (`forge test --root packages/contracts`) | 19 tests, 0 failed (10 core + 9 KabutoGuard), 2 fuzz tests × 256 runs. Frame opcodes mocked at the `HegotaSupport` helper addresses; swaps against the real v4 PoolManager bytecode. Found two shape-check gaps, both fixed with regression tests and the paymaster redeployed. |
 | Live devnet e2e (`pnpm --dir packages/e2e test`) | Protected swap, bot-first race, out-of-band and three tampered fills refused, run against the public devnet. Some cases were admitted but timed out waiting for inclusion while the public devnet stalled (every hash and outcome in TESTING.md). |
 | Live app runs (this README's top table) | Ordinary swap sandwiched; protected swap cancelled at 0 gas; intent filled by a VPS filler. |
 | Live sandwich bot (`packages/bot`) | Watches the public mempool and the alt-mempool, front-runs and back-runs real swaps, and records the realized loss vs the no-sandwich quote for every attempt. |
@@ -253,7 +271,7 @@ Uniswap v4 PoolManager `0x6bF9Aa9c04fd001385742d61f6818C3236429848`, Quoter `0xe
 
 | Package | What |
 |---|---|
-| `packages/contracts` | `KabutoAccount`, `KabutoPaymaster`, `KabutoFiller`, `KabutoRouter`, `DevnetToken` (Foundry; `@forshtat/hegota-support` for frame opcodes; Uniswap v4-core) |
+| `packages/contracts` | `KabutoAccount`, `KabutoPaymaster`, `KabutoFiller`, `KabutoRouter`, `KabutoGuardHook`, `DevnetToken` (Foundry; `@forshtat/hegota-support` for frame opcodes; Uniswap v4-core) |
 | `packages/sdk` | `@kabuto/sdk`: `protectedSwap`, `sponsoredSwap`, `signIntent`, `buildFill`, `submitFill`, `track`, `explainRejection` |
 | `packages/app` | Kabuto DEX (Vite + React, GSAP ScrollTrigger landing, Motion UI): swap with the protection toggle, intents, wallet |
 | `packages/filler` | intent relay (untrusted; intents are self-authenticating) + reference filler + attacker modes |

@@ -15,6 +15,8 @@ Kabuto is a DEX, an SDK and an open filler network built on EIP-8141 frame trans
 
 **Open intents (SIGHASH_ANYONECANPAY for Ethereum).** Instead of routing, sign a note: up to X in, at least a Dutch-decaying minimum out. No transaction, no gas. Any filler completes it through Uniswap v4 and pays the gas. EIP-8141's security section warns that explicit-message approvals "authorize an open-ended list" of frames; Kabuto's VERIFY frame binds the approval to every frame (one transfer ≤ max, filler frames that cannot act as the account, an atomic batch, a settlement checked against the balance read during validation). No settlement contract, no Permit2, no auction server. Every tampered fill we tried was refused before reaching a block.
 
+**KabutoGuard: a Uniswap v4 pool that cannot be sandwiched.** A v4 `beforeSwap` hook reads the EIP-8141 transaction it runs in and admits only swaps whose price was pinned in an earlier VERIFY frame. Live: a pinned swap landed, and a plain transaction (what a sandwich bot sends) through the same router reverted with `NotFrameTx()`. Only possible with frame transactions.
+
 **The swap can pay its own gas.** A staked paymaster inspects the frames and sponsors a price-pinned swap that repays it from the output in the same atomic batch: the account's ETH moved by exactly 0.
 
 **Works on mainnet today: "Were you sandwiched?"** Paste any Ethereum mainnet Uniswap v4 swap on the landing page; Kabuto reads that block from public RPCs, detects a sandwich with the same rules as our replay, and shows how far the bot moved the price and whether a ±0.5% Kabuto pin would have made the swap invalid.
@@ -24,7 +26,7 @@ Kabuto is a DEX, an SDK and an open filler network built on EIP-8141 frame trans
 Every claim in the README is tied to the contract line that enforces it, the test that covers it and the devnet transaction that proves it.
 
 ## How it's made
-- **Contracts (Solidity 0.8.28, Foundry):** `KabutoAccount` (verifyPrice, verifyPriceExecution, verifyIntent, settleIntent), `KabutoPaymaster` (frame-inspecting sponsor), `KabutoFiller` (pays gas when its operator co-signs; swaps through v4), `KabutoRouter` (minimal v4 unlock-callback router). Frame opcodes (APPROVE, TXPARAM, FRAMEPARAM, FRAMEDATACOPY, SIGPARAM) via `@forshtat/hegota-support`; Uniswap v4-core `StateLibrary` / `extsload`.
+- **Contracts (Solidity 0.8.28, Foundry):** `KabutoAccount` (verifyPrice, verifyPriceExecution, verifyIntent, settleIntent), `KabutoPaymaster` (frame-inspecting sponsor), `KabutoFiller` (pays gas when its operator co-signs; swaps through v4), `KabutoRouter` (minimal v4 unlock-callback router), `KabutoGuardHook` (frame-aware v4 hook). Frame opcodes (APPROVE, TXPARAM, FRAMEPARAM, FRAMEDATACOPY, SIGPARAM) via `@forshtat/hegota-support`; Uniswap v4-core `StateLibrary` / `extsload`.
 - **Chain:** EF EIP-8141 / ERC-8421 devnet (ethrex `eip8141-tracer` + the ERC-8421 sidecar) with Uniswap v4 PoolManager, Quoter and StateView predeployed from mainnet bytecode. Accounts and the paymaster stake in the ERC-8421 registry so the alternative mempool admits their storage reads.
 - **Signatures:** owner keys on the native P256 scheme (EIP-8141 scheme 2, a passkey-style key generated in the browser); intents use the explicit-`msg` path; the filler co-signs the canonical hash as a second signature entry.
 - **SDK (`@kabuto/sdk`, TypeScript + viem):** protectedSwap, sponsoredSwap, signIntent, buildFill, submitFill, track, explainRejection. Scheme-aware validation-gas budget (100k cap, 2,800 per secp256k1 / 6,700 per P256 signature).

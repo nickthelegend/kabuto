@@ -28,5 +28,14 @@
   "paymasterFees": {
     "kUSD": "1500000",
     "WETH": "500000000000000"
-  }
+  },
+  "guardHook": "0x9A485379e6307A12cF380D9F783296Aa1E570080",
+  "guardPoolKey": {
+    "currency0": "0x1b7d32025F7cA633943BbCC9Ec61a98ef66187b6",
+    "currency1": "0x866fc51eafb778849e10552136d6e705f91307a7",
+    "fee": 3000,
+    "tickSpacing": 60,
+    "hooks": "0x9A485379e6307A12cF380D9F783296Aa1E570080"
+  },
+  "guardPoolId": "0x4869421e2f2f11bcdecdf1168a5b6183eb00c123cc1d5181b8712af074b91725"
 }

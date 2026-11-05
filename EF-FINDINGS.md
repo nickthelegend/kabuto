@@ -14,6 +14,8 @@ What we verified on the public alt-mempool devnet (chain 1337, gateway `altmempo
 | Explicit 32-byte `msg` signatures + a second signature entry | the owner signs only an intent digest (entry 0, explicit msg); the filler co-signs the canonical hash (entry 1) and pays | `0xefebea6a…cce3` |
 | Same-nonce replacement | fillers competing for one intent replace each other by fee | `packages/filler` |
 
+| Frame opcodes from nested calls | `TXPARAM`/`FRAMEPARAM`/`FRAMEDATACOPY` work from **any** contract called inside a SENDER frame, including a Uniswap v4 hook called by the PoolManager during `unlock`. In a legacy transaction the same calls fail (our hook catches it and reverts `NotFrameTx`). This lets an application contract enforce "only frame transactions with property X may call me": KabutoGuard requires a successful earlier VERIFY price pin | probe `0x25d65d67…947a`, guarded swap [`0xd1962486…`](https://explorer.altmempool.wtf/tx/0xd1962486165f1c4afdf3aec80ad6f2c6f882063403ad81e8469165e68472f861), legacy swap [`0x8fd351e2…`](https://explorer.altmempool.wtf/tx/0x8fd351e2cffefc53e3680916bdb4007f24cbbc9b601ae37b13a80287e3291829) |
+
 ## Friction and suggestions
 
 0. **Nov 6, ~00:00 IST: the gateway lost its gossip peer.** `skandha_connectedPeers` on `altmempoolgateway.forshtat.com/rpc` returned `[]` while its pool grew to 28 entries stuck at `New` (ours and other teams'). The miner's own sidecar (`altmempool.forshtat.com/rpc`) had its own, nearly empty pool. Submitting directly to the miner's sidecar included our intent fill within seconds. Kabuto now uses the miner endpoint; a health line in the explorer for "gateway peers: 0" would have saved an hour.
