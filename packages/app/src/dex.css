@@ -152,3 +152,4 @@
 .dx-band { margin-top: 0; padding-top: 0; padding-bottom: 0; }
 .dx-band > * { margin-top: 8px; }
 .dx-track i { display: block; }
+.dx-saved small { max-width: 60%; line-height: 1.3; } .dx-saved b { white-space: nowrap; }
