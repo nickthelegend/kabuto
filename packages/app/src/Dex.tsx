@@ -16,6 +16,14 @@ const pop = { initial: { opacity: 0, y: 18, scale: 0.98 }, animate: { opacity: 1
 const short = (a?: string, n = 6) => (a ? `${a.slice(0, n)}…${a.slice(-4)}` : "");
 const txUrl = (h?: string) => `${D.explorer}tx/${h}`;
 type Bals = { eth: bigint; kusd: bigint; weth: bigint };
+/** Mint devnet kUSD (1,000 per faucet call) to `to` until it holds at least `need`. Real transactions from the funder key. */
+async function mintKusd(w: Saved, to: `0x${string}`, need: bigint) {
+  for (let i = 0; i < 6; i++) {
+    const b = await balances(to);
+    if (b.kusd >= need) return;
+    await sendLegacy(w.funderKey, { to: D.kusd, data: encodeFunctionData({ abi: tokenAbi, functionName: "faucet", args: [to] }) });
+  }
+}
 const UNPROTECTED_SLIPPAGE_BPS = 200; // what an ordinary wallet sends (2%)
 /** kUSD lost to a worse fill, from the attempt's own numbers (no live price): buy = share of kUSD paid, sell = kUSD short. */
 const lossKusd = (a: Attempt) => (a.out === undefined || a.quoted <= a.out ? 0 : a.side === "buy" ? (Number(a.amountIn) / 1e6) * (Number(a.quoted - a.out) / Number(a.quoted)) : Number(a.quoted - a.out) / 1e6);
@@ -123,7 +131,7 @@ function Profile({ w, acct, eoa, onClose, onReset, onTopped }: { w: Saved; acct:
   const [busy, setBusy] = useState(false);
   const topUp = async () => {
     setBusy(true);
-    try { for (const to of [w.account!, w.funder]) await sendLegacy(w.funderKey, { to: D.kusd, data: encodeFunctionData({ abi: tokenAbi, functionName: "faucet", args: [to] }) }); onTopped(); }
+    try { for (const to of [w.account!, w.funder]) await mintKusd(w, to, 3_000_000_000n); onTopped(); }
     finally { setBusy(false); }
   };
   return (
@@ -132,7 +140,7 @@ function Profile({ w, acct, eoa, onClose, onReset, onTopped }: { w: Saved; acct:
       <div className="dx-bal"><span>{acct ? fmt(acct.kusd, 6, 2) : "…"} <em>kUSD</em></span><span>{acct ? fmt(acct.weth, 18, 4) : "…"} <em>WETH</em></span><span>{acct ? fmt(acct.eth, 18, 4) : "…"} <em>ETH</em></span></div>
       <div className="dx-menu-row"><small>Ordinary wallet</small><span className="mono">{short(w.funder, 10)}</span></div>
       <div className="dx-bal"><span>{eoa ? fmt(eoa.kusd, 6, 2) : "…"} <em>kUSD</em></span><span>{eoa ? fmt(eoa.weth, 18, 4) : "…"} <em>WETH</em></span><span>{eoa ? fmt(eoa.eth, 18, 4) : "…"} <em>ETH</em></span></div>
-      <button className="dx-menu-btn" onClick={topUp} disabled={busy}>{busy ? "Minting…" : "Get 1,000 test kUSD"}</button>
+      <button className="dx-menu-btn" onClick={topUp} disabled={busy}>{busy ? "Minting…" : "Top up test kUSD"}</button>
       <button className="dx-menu-btn ghost" onClick={() => { if (confirm("Forget this devnet wallet in this browser?")) onReset(); }}>Disconnect</button>
       <button className="dx-menu-x" onClick={onClose} aria-label="Close">×</button>
     </div>
@@ -164,6 +172,12 @@ function SwapPanel({ w, acct, eoa, sqrtP, onConnect, onDone }: { w: Saved | null
   const insufficient = !!amountIn && have !== undefined && amountIn > have;
   const toKusd = (v: bigint, decimals: number, isWeth: boolean) => (isWeth ? (Number(v) / 10 ** decimals) * (price ?? 0) : Number(v) / 10 ** decimals);
 
+  const [minting, setMinting] = useState(false);
+  const topUp = async () => {
+    if (!w || !amountIn) return;
+    setBusy(true); setMinting(true);
+    try { await mintKusd(w, protect ? w.account! : w.funder, amountIn); onDone(); } finally { setBusy(false); setMinting(false); }
+  };
   const swap = async () => {
     if (!w || !amountIn) return;
     setBusy(true); setLast(null);
@@ -211,8 +225,8 @@ function SwapPanel({ w, acct, eoa, sqrtP, onConnect, onDone }: { w: Saved | null
         {!w ? (
           <button className="dx-cta" onClick={onConnect}>Connect wallet</button>
         ) : (
-          <button className={`dx-cta ${protect ? "shu" : ""}`} disabled={busy || !amountIn || insufficient} onClick={swap}>
-            {busy ? "Swapping…" : insufficient ? `Not enough ${tin.symbol}` : "Swap"}
+          <button className={`dx-cta ${protect ? "shu" : ""}`} disabled={busy || !amountIn || (insufficient && side === "sell")} onClick={insufficient && side === "buy" ? topUp : swap}>
+            {busy ? (minting ? "Minting test kUSD…" : "Swapping…") : insufficient ? (side === "buy" ? "Get test kUSD" : `Not enough ${tin.symbol}`) : "Swap"}
           </button>
         )}
       </section>
@@ -296,7 +310,7 @@ function IntentsPanel({ w, acct, sqrtP, onConnect }: { w: Saved | null; acct: Ba
         </div>
         <div className="dx-band" role="group" aria-label="Auction window"><span>Window</span>{[60, 120, 300].map((s) => <button key={s} aria-pressed={windowSec === s} onClick={() => setWindowSec(s)}>{s < 120 ? `${s}s` : `${s / 60} min`}</button>)}</div>
         {err && <div className="dx-err" role="alert">{err}</div>}
-        {!w ? <button className="dx-cta" onClick={onConnect}>Connect wallet</button> : <button className="dx-cta" disabled={busy || !amountIn || insufficient} onClick={post}>{busy ? "Signing…" : insufficient ? "Not enough kUSD" : "Sign intent"}</button>}
+        {!w ? <button className="dx-cta" onClick={onConnect}>Connect wallet</button> : <button className="dx-cta" disabled={busy || !amountIn} onClick={insufficient ? async () => { setBusy(true); try { await mintKusd(w, w.account!, amountIn!); } finally { setBusy(false); } } : post}>{busy ? (insufficient ? "Minting test kUSD…" : "Signing…") : insufficient ? "Get test kUSD" : "Sign intent"}</button>}
       </section>
       <AnimatePresence initial={false}>{posted.map((p) => <IntentCard key={p.id} p={p} events={events.filter((e) => e.intentId === p.id)} />)}</AnimatePresence>
     </div>

@@ -45,10 +45,11 @@ export function decodeSwap(data: Hex, hash: Hex, sender: Address, kind: "eoa" | 
 export const balance = (token: Address, who: Address) => pub.readContract({ address: token, abi: erc20Abi, functionName: "balanceOf", args: [who] });
 export async function ensureAssets(role: "bot" | "victim", kusdTarget: bigint, wethTarget: bigint) {
   const w = wallet(role), who = w.account.address;
-  if (await pub.getBalance({ address: who }) < parseUnits("0.05", 18)) {
+  // Only ask the devnet faucet when gas money is genuinely low (front-runs cost ~0.00003 ETH at 0.2 gwei).
+  if (await pub.getBalance({ address: who }) < parseUnits("0.01", 18)) {
     await gatewayRpc("skandha_explorer_faucet", [who]);
-    for (let i = 0; i < 60 && await pub.getBalance({ address: who }) < parseUnits("0.05", 18); i++) await sleep(1000);
-    if (await pub.getBalance({ address: who }) < parseUnits("0.05", 18)) throw new Error(`ETH faucet did not fund ${who}`);
+    for (let i = 0; i < 60 && await pub.getBalance({ address: who }) < parseUnits("0.01", 18); i++) await sleep(1000);
+    if (await pub.getBalance({ address: who }) < parseUnits("0.01", 18)) throw new Error(`ETH faucet did not fund ${who}`);
   }
   let k = await balance(deployment.kusd, who);
   for (let i = 0; k < kusdTarget && i < 50; i++) {

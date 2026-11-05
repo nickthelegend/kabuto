@@ -168,12 +168,31 @@ async function attack(v: Swap) {
   console.log(`${new Date().toISOString()} attempt ${v.hash}: front ${frontHash} ${front?.status ?? "missing"}, back ${backHash} ${back?.status ?? "missing"}, victim ${victim.status}, P&L ${attempt.pnlKusd} kUSD`);
 }
 
+/**
+ * After every attempt: sell any WETH above the working inventory back into the pool (a blocked victim leaves the bot
+ * holding its front-run, which would otherwise drift the price and drain kUSD), then re-mint kUSD from the devnet token
+ * faucet. Keeps the bot able to attack the next swap. Only touches the bot's own wallet.
+ */
+async function rebalance() {
+  const w = wallet("bot"), who = w.account.address;
+  const wethTarget = MAX_WETH + parseUnits("0.05", 18);
+  const weth = await balance(deployment.predeploys.weth, who);
+  if (weth > wethTarget + parseUnits("0.005", 18)) {
+    const excess = weth - wethTarget;
+    const h = await w.writeContract({ address: deployment.router, abi: routerAbi, functionName: "swapExactIn", args: [deployment.poolKey, deployment.wethIs0, excess, 0n, who], gasPrice: 2_000_000n, type: "legacy" });
+    const r = await pub.waitForTransactionReceipt({ hash: h, timeout: 120_000 });
+    console.log(`${new Date().toISOString()} rebalance: sold ${formatUnits(excess, 18)} WETH back (${h}, ${r.status})`);
+  }
+  await ensureAssets("bot", MAX_KUSD + parseUnits("100", 6), wethTarget);
+  nextNonce = await pub.getTransactionCount({ address: who, blockTag: "pending" });
+}
+
 export async function start(signal?: AbortSignal) {
   if (deployment.chainId !== 1337 || await pub.getChainId() !== 1337) throw new Error("Refusing to run outside devnet 1337");
   // Fail early on missing read-only RPCs.
   for (const pending of await scanMempools()) seen.add(pending.hash);
   cachedPool = await pool();
-  await ensureAssets("bot", MAX_KUSD + parseUnits("100", 6), MAX_WETH + parseUnits("0.05", 18));
+  await rebalance();
   nextNonce = await pub.getTransactionCount({ address: account("bot").address, blockTag: "pending" });
   const server = createServer(async (req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -208,7 +227,7 @@ export async function start(signal?: AbortSignal) {
     if (v.pinned) console.log(`price-pinned victim ${v.hash}`);
     if (state.busy) return;
     state.busy = true;
-    void attack(v).catch(e => { state.lastError = e instanceof Error ? e.message : String(e); console.error("attack error:", state.lastError); }).finally(() => { state.busy = false; });
+    void attack(v).catch(e => { state.lastError = e instanceof Error ? e.message : String(e); console.error("attack error:", state.lastError); }).then(() => rebalance()).catch(e => { state.lastError = `rebalance: ${e instanceof Error ? e.message : String(e)}`; console.error(state.lastError); }).finally(() => { state.busy = false; });
   };
   const loop = async (name: string, read: () => Promise<Swap[]>) => {
     while (running) {
