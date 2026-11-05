@@ -7,7 +7,7 @@ import { PROOF, REFUSED } from "./lib/proof";
 const short = (h: string, n = 8) => `${h.slice(0, n)}…${h.slice(-4)}`;
 const tx = (h: string) => `${D.explorer}tx/${h}`;
 
-const STEPS = [
+const STEPS: { img: string; video?: string; n: string; t: string; d: string }[] = [
   {
     img: "/step-1-pin.jpg",
     n: "01",
@@ -22,6 +22,7 @@ const STEPS = [
   },
   {
     img: "/step-3-vanish.jpg",
+    video: "/step-3-vanish.mp4",
     n: "03",
     t: "Your swap stops existing",
     d: "When the price leaves your band, the VERIFY frame fails, and a transaction whose VERIFY fails is invalid. It is never included, nobody can fill it, and you pay nothing. The bot is left holding its trade.",
@@ -132,7 +133,7 @@ export function Landing() {
         <div className="l-steps">
           {STEPS.map((s) => (
             <article className="l-step" key={s.n}>
-              <img src={s.img} alt="" loading="lazy" />
+              {s.video ? <video src={s.video} poster={s.img} autoPlay muted loop playsInline aria-hidden /> : <img src={s.img} alt="" loading="lazy" />}
               <div>
                 <span className="mono num">{s.n}</span>
                 <h3>{s.t}</h3>
