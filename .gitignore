@@ -10,3 +10,4 @@ dist/
 .DS_Store
 packages/contracts/lib/
 .pnpm-store/
+packages/demo/takes/

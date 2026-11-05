@@ -44,6 +44,8 @@ function attempt(a: any) {
   } else if (a.pinned && a.victimStatus === "Cancelled") {
     console.log(`         ${c.green}${c.b}BLOCKED${c.x}     the front-run moved the price out of the victim's band → its VERIFY frame fails → never included, 0 gas`);
     console.log(`         ${c.green}${c.b}LOSS${c.x}        0 ${t.outSym} — the bot is left holding its own front-run`);
+  } else if (a.victim && a.front && (a.victim.blockNumber < a.front.blockNumber || (a.victim.blockNumber === a.front.blockNumber && a.victim.transactionIndex < a.front.transactionIndex))) {
+    console.log(`         ${c.grey}${c.b}TOO SLOW${c.x}${c.grey}    the victim landed before the front-run, so there was no sandwich (it filled at its own price)${c.x}`);
   } else {
     console.log(`         ${c.grey}${a.summary}${c.x}`);
   }

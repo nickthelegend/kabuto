@@ -44,7 +44,7 @@ services:
     working_dir: /app/packages/bot
     command: ["npx", "tsx", "src/main.ts"]
     mem_limit: 256m
-    environment: { <<: *env, KABUTO_KEYS_FILE: /keys/bot.json, BOT_MAX_WETH: "0.02", BOT_MAX_KUSD: "1500", BOT_HIGH_GAS_WEI: "200000000" }
+    environment: { <<: *env, KABUTO_KEYS_FILE: /keys/bot.json, BOT_MAX_WETH: "0.02", BOT_MAX_KUSD: "1500", BOT_HIGH_GAS_WEI: "5000000000" }
     volumes: [keys:/keys, bot-data:/app/packages/bot/data]
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8787/status').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
