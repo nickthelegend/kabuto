@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { fmt, tokenOut, type Side } from "../lib/market";
 import type { Attempt } from "../lib/swap";
-import { Icon, num, TxLink, useNow } from "./ui";
+import { amt, Icon, num, TxLink, useNow } from "./ui";
 
 export type Loss = { kusd: number; side: Side; amountIn: bigint };
 const pop = { initial: { opacity: 0, y: 18, scale: 0.98 }, animate: { opacity: 1, y: 0, scale: 1 }, exit: { opacity: 0, y: -10, scale: 0.98 }, transition: { type: "spring", stiffness: 380, damping: 32 } } as const;
@@ -86,8 +86,8 @@ export function SwapResult({ a, loss }: { a: Attempt; loss: Loss | null }) {
       </ol>
 
       <div className="dx-kv">
-        <div><small>Quoted</small><span>{a.quoted ? `${fmt(a.quoted, tout.decimals, 5)} ${tout.symbol}` : "…"}</span></div>
-        <div><small>Received</small><span>{a.out !== undefined && a.phase === "included" ? `${fmt(a.out, tout.decimals, 5)} ${tout.symbol}` : pending ? "…" : `0 ${tout.symbol}`}</span></div>
+        <div><small>Quoted</small><span>{a.quoted ? `${amt(a.quoted, tout.decimals)} ${tout.symbol}` : "…"}</span></div>
+        <div><small>Received</small><span>{a.out !== undefined && a.phase === "included" ? `${amt(a.out, tout.decimals)} ${tout.symbol}` : pending ? "…" : `0 ${tout.symbol}`}</span></div>
         <div><small>Gas</small><span>{a.gasWei !== undefined ? fmtGas(a.gasWei) : a.phase === "cancelled" || a.phase === "rejected" ? "0 ETH" : "…"}</span></div>
       </div>
 

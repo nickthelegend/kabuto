@@ -47,7 +47,14 @@ function useDismiss(open: boolean, close: () => void, ref: React.RefObject<HTMLE
 
 export function Dex() {
   const [w, setW] = useState<Saved | null>(() => { const s = load(); return s?.account && s.staked ? s : null; });
-  const [tab, setTab] = useState<(typeof TABS)[number]>("swap");
+  // deep link: #/app/intents opens the Intents tab
+  const [tab, setTabRaw] = useState<(typeof TABS)[number]>(() => (location.hash.startsWith("#/app/intents") ? "intents" : "swap"));
+  const setTab = (t: (typeof TABS)[number]) => { setTabRaw(t); history.replaceState(null, "", t === "swap" ? "#/app" : "#/app/intents"); };
+  useEffect(() => {
+    const on = () => { if (location.hash.startsWith("#/app")) setTabRaw(location.hash.startsWith("#/app/intents") ? "intents" : "swap"); };
+    window.addEventListener("hashchange", on);
+    return () => window.removeEventListener("hashchange", on);
+  }, []);
   const [connectOpen, setConnectOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const live = useLive();
