@@ -8,4 +8,11 @@ Network: Rabdi, chain 7794095. Settlement: EIP-8141 devnet, chain 1337.
 
 Readers filter with `.ownedBy(writer)`. A filler rechecks the signed intent against the account on chain 1337 before filling. The relay alone patches the status to `filled` after a landed report.
 
-Query: `arkiv.schema = str('kabuto.intent.v1') AND status = str('open') AND chainId = u64(1337)`.
+Queries (always add the owner filter):
+
+```text
+arkiv.schema = str('kabuto.fill.v1') AND $owner = addr(0x8eD225Ae7f4b445Bfee6ad5dd9719C59426Af3aF)
+arkiv.schema = str('kabuto.intent.v1') AND status = str('open') AND chainId = u64(1337) AND $owner = addr(0x8eD225Ae7f4b445Bfee6ad5dd9719C59426Af3aF)
+```
+
+The first returns the fill log (30-day entities); the second returns rows only while an intent is open, because intent entities expire at their deadline.
