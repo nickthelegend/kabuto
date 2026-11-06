@@ -1,0 +1,33 @@
+<template>
+  <style>
+    @font-face { font-family: "Urbanist"; src: url("assets/fonts/Urbanist.ttf"); font-weight: 100 900; }
+    @font-face { font-family: "Space Mono"; src: url("assets/fonts/SpaceMono-Regular.ttf"); }
+    #root { position: absolute; inset: 0; background: #06070c; overflow: hidden; color: #efeadf; }
+    .pane { position: absolute; top: 76px; width: 940px; height: 760px; border-radius: 24px; overflow: hidden; border: 1px solid rgba(239,234,223,.12); background: #fff; }
+    .pane video { position: absolute; left: 0; top: 0; width: 1100px; height: 1000px; transform: scale(.8545); transform-origin: 0 0; }
+    #a-ip { left: 13px; } #a-fp { left: 967px; }
+    .lbl { position: absolute; top: 22px; font: 400 22px/1 "Space Mono"; letter-spacing: .12em; text-transform: uppercase; color: #9b98a8; }
+    .lbl b { color: #ffe9b0; font-weight: 400; }
+    .card { position: absolute; top: 862px; width: 940px; padding: 22px 28px; border-radius: 22px; background: #0c0d15; border: 1px solid rgba(239,234,223,.14); }
+    .card small { display: block; font: 400 19px/1 "Space Mono"; letter-spacing: .06em; color: #ffe9b0; }
+    .card b { display: block; margin-top: 12px; font: 700 34px/1.1 "Urbanist"; }
+    .card span { display: block; margin-top: 8px; font: 400 19px/1.35 "Space Mono"; color: #b9b4cc; }
+    #a-ic { left: 13px; } #a-fc { left: 967px; border-color: rgba(166,228,191,.5); } #a-fc b { color: #a6e4bf; }
+  </style>
+  <div id="root" data-composition-id="arkiv4" data-width="1920" data-height="1080">
+    <div class="lbl" style="left:24px">Arkiv · Rabdi explorer · <b>intent entity</b></div>
+    <div class="lbl" style="left:978px">Arkiv · Rabdi explorer · <b>fill entity</b></div>
+    <div class="pane" id="a-ip"><video id="a-iv" class="clip" data-start="0" data-duration="6" data-media-start="2.5" src="assets/footage/arkiv-intent4.mp4" muted playsinline></video></div>
+    <div class="pane" id="a-fp"><video id="a-fv" class="clip" data-start="0" data-duration="6" data-media-start="2.5" src="assets/footage/arkiv-fill4.mp4" muted playsinline></video></div>
+    <div class="card" id="a-ic"><small>kabuto.intent.v1 · 300 kUSD → WETH</small><b>status: open → filled</b><span>expires at the intent's own deadline (now expired)</span></div>
+    <div class="card" id="a-fc"><small>kabuto.fill.v1 · links the intent key</small><b>outcome: landed</b><span>written after the devnet confirmed fill 0xd498630c…752b</span></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const E = "power3.out";
+    tl.from(".lbl", { y: -12, opacity: 0, duration: 0.5, stagger: 0.1 }, 0.1)
+      .from("#a-ic", { y: 30, opacity: 0, duration: 0.6, ease: E }, 0.6)
+      .from("#a-fc", { y: 30, opacity: 0, duration: 0.6, ease: E }, 2.2);
+    window.__timelines["arkiv4"] = tl;
+  </script>
+</template>

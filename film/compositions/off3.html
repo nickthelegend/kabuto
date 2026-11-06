@@ -15,15 +15,15 @@
   <div id="root" data-composition-id="off3" data-width="1920" data-height="1080">
     <div class="lbl" style="left:24px">Kabuto DEX · protection <b>off</b></div>
     <div class="lbl" style="left:978px">pnpm --dir packages/bot watch · live</div>
-    <div class="pane" id="o-dexp"><video id="o-dex" class="clip" data-start="0" data-duration="25" data-media-start="16" src="assets/footage/attack-dex.mp4" muted playsinline></video></div>
-    <div class="pane" id="o-termp"><video id="o-term" class="clip" data-start="0" data-duration="25" data-media-start="16" src="assets/footage/attack-term.mp4" muted playsinline></video></div>
+    <div class="pane" id="o-dexp"><video id="o-dex" class="clip" data-start="0" data-duration="23" data-media-start="16" src="assets/footage/attack-dex.mp4" muted playsinline></video></div>
+    <div class="pane" id="o-termp"><video id="o-term" class="clip" data-start="0" data-duration="23" data-media-start="16" src="assets/footage/attack-term.mp4" muted playsinline></video></div>
     <div class="cap" id="o-cap">Sandwiched · −1.80% · 27.04 kUSD lost<span>block 407,289 · bot idx 0 · you idx 1 · bot idx 2</span></div>
   </div>
   <script>
     const tl = gsap.timeline({ paused: true });
     tl.from(".lbl", { y: -12, opacity: 0, duration: 0.5, stagger: 0.1 }, 0.1)
       .from("#o-cap", { y: 30, opacity: 0, duration: 0.6, ease: "power3.out" }, 15)
-      .to("#o-cap", { opacity: 0, duration: 0.4 }, 24.4);
+      .to("#o-cap", { opacity: 0, duration: 0.4 }, 22.4);
     window.__timelines["off3"] = tl;
   </script>
 </template>

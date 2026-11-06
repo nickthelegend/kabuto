@@ -9,15 +9,15 @@
     .tp { left: 967px; } .tp video { object-position: 0 0; transform: scale(1.15); transform-origin: 0 0; }
     .lbl { position: absolute; top: 22px; font: 400 22px/1 "Space Mono"; letter-spacing: .12em; text-transform: uppercase; color: #9b98a8; }
     .lbl b { color: #a6e4bf; font-weight: 400; }
-    .ff { position: absolute; left: 483px; top: 960px; transform: translateX(-50%); padding: 16px 26px; border-radius: 999px; background: rgba(6,7,12,.9); border: 1px solid rgba(239,234,223,.25); font: 400 26px/1 "Space Mono"; color: #efeadf; }
+    .ff { position: absolute; left: 483px; top: 110px; transform: translateX(-50%); padding: 16px 26px; border-radius: 999px; background: rgba(6,7,12,.9); border: 1px solid rgba(239,234,223,.25); font: 400 26px/1 "Space Mono"; color: #efeadf; }
     .cap { position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); padding: 20px 30px; border-radius: 20px; background: rgba(12,13,21,.94); border: 1px solid rgba(166,228,191,.55); font: 700 34px/1.2 "Urbanist"; color: #a6e4bf; white-space: nowrap; }
     .cap span { font: 400 22px/1 "Space Mono"; color: #b9b4cc; margin-left: 14px; }
   </style>
   <div id="root" data-composition-id="on3" data-width="1920" data-height="1080">
     <div class="lbl" style="left:24px">Kabuto DEX · protection <b>on</b></div>
     <div class="lbl" style="left:978px">pnpm --dir packages/bot watch · live</div>
-    <div class="pane dp"><video id="n-d1" class="clip" data-start="0" data-duration="20" data-media-start="36" src="assets/footage/attack-dex.mp4" muted playsinline></video><video id="n-d2" class="clip" data-start="20" data-duration="4" data-media-start="56" data-playback-rate="4" src="assets/footage/attack-dex.mp4" muted playsinline></video><video id="n-d3" class="clip" data-start="24" data-duration="9" data-media-start="72" src="assets/footage/attack-dex.mp4" muted playsinline></video></div>
-    <div class="pane tp"><video id="n-t1" class="clip" data-start="0" data-duration="20" data-media-start="36" src="assets/footage/attack-term.mp4" muted playsinline></video><video id="n-t2" class="clip" data-start="20" data-duration="4" data-media-start="56" data-playback-rate="4" src="assets/footage/attack-term.mp4" muted playsinline></video><video id="n-t3" class="clip" data-start="24" data-duration="9" data-media-start="72" src="assets/footage/attack-term.mp4" muted playsinline></video></div>
+    <div class="pane dp"><video id="n-d1" class="clip" data-start="0" data-duration="20" data-media-start="36" src="assets/footage/attack-dex.mp4" muted playsinline></video><video id="n-d2" class="clip" data-start="20" data-duration="4" data-media-start="56" data-playback-rate="4" src="assets/footage/attack-dex.mp4" muted playsinline></video><video id="n-d3" class="clip" data-start="24" data-duration="4" data-media-start="72" src="assets/footage/attack-dex.mp4" muted playsinline></video></div>
+    <div class="pane tp"><video id="n-t1" class="clip" data-start="0" data-duration="20" data-media-start="36" src="assets/footage/attack-term.mp4" muted playsinline></video><video id="n-t2" class="clip" data-start="20" data-duration="4" data-media-start="56" data-playback-rate="4" src="assets/footage/attack-term.mp4" muted playsinline></video><video id="n-t3" class="clip" data-start="24" data-duration="4" data-media-start="72" src="assets/footage/attack-term.mp4" muted playsinline></video></div>
     <div class="ff" id="n-ff">waiting for the bot's report · 4×</div>
     <div class="cap" id="n-cap">Never included · 0 gas · 27.04 kUSD saved<span>VERIFY failed after the bot's front-run</span></div>
   </div>
@@ -27,7 +27,7 @@
       .fromTo("#n-ff", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 20)
       .to("#n-ff", { opacity: 0, duration: 0.3 }, 23.7)
       .from("#n-cap", { y: 30, opacity: 0, duration: 0.6, ease: "power3.out" }, 19)
-      .to("#n-cap", { opacity: 0, duration: 0.4 }, 32.4);
+      .to("#n-cap", { opacity: 0, duration: 0.4 }, 27.4);
     window.__timelines["on3"] = tl;
   </script>
 </template>

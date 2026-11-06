@@ -1,0 +1,22 @@
+<template>
+  <style>
+    @font-face { font-family: "Space Mono"; src: url("assets/fonts/SpaceMono-Regular.ttf"); }
+    @font-face { font-family: "Urbanist"; src: url("assets/fonts/Urbanist.ttf"); font-weight: 100 900; }
+    #root { position: absolute; inset: 0; background: #06070c; overflow: hidden; }
+    #c-v { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+    .c-url { position: absolute; left: 50%; bottom: 36px; transform: translateX(-50%); padding: 12px 22px; border-radius: 999px; background: rgba(6,7,12,.86); border: 1px solid rgba(239,234,223,.16); font: 400 22px/1 "Space Mono"; color: #b9b4cc; white-space: nowrap; }
+    .c-note { position: absolute; left: 78px; top: 770px; width: 600px; padding: 18px 24px; border-radius: 18px; background: rgba(12,13,21,.94); border: 1px solid rgba(255,233,176,.4); font: 400 21px/1.4 "Space Mono"; color: #efeadf; }
+    .c-note b { display: block; font: 700 30px/1.15 "Urbanist"; color: #ffe9b0; margin-bottom: 6px; }
+  </style>
+  <div id="root" data-composition-id="check4" data-width="1920" data-height="1080">
+    <video id="c-v" class="clip" data-start="0" data-duration="10" data-media-start="5" src="assets/footage/check4.mp4" muted playsinline></video>
+    <div class="c-note" id="c-note"><b>Real Ethereum mainnet</b>reads block 26,301,932 from public RPCs in your browser · read-only</div>
+    <div class="c-url" id="c-url">kabuto-self.vercel.app · Were you sandwiched?</div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.from("#c-url", { y: 20, opacity: 0, duration: 0.6, ease: "power3.out" }, 0.4)
+      .from("#c-note", { y: 24, opacity: 0, duration: 0.6, ease: "power3.out" }, 5.0);
+    window.__timelines["check4"] = tl;
+  </script>
+</template>

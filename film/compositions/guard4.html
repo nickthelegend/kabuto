@@ -1,0 +1,47 @@
+<template>
+  <style>
+    @font-face { font-family: "Urbanist"; src: url("assets/fonts/Urbanist.ttf"); font-weight: 100 900; }
+    @font-face { font-family: "Space Mono"; src: url("assets/fonts/SpaceMono-Regular.ttf"); }
+    #root { position: absolute; inset: 0; background: radial-gradient(900px 700px at 20% 40%, rgba(255,233,176,.06), transparent 60%), #06070c; overflow: hidden; color: #efeadf; }
+    .g-tag { position: absolute; left: 110px; top: 150px; font: 400 22px/1 "Space Mono"; letter-spacing: .16em; text-transform: uppercase; color: #9b98a8; }
+    .g-h { position: absolute; left: 110px; top: 192px; width: 560px; font: 800 72px/1 "Urbanist"; letter-spacing: -.045em; }
+    .g-h em { font-style: normal; color: #ffe9b0; }
+    .g-p { position: absolute; left: 110px; top: 380px; width: 540px; font: 400 23px/1.45 "Space Mono"; color: #b9b4cc; }
+    .row { position: absolute; left: 110px; width: 560px; padding: 22px 26px; border-radius: 22px; background: #0c0d15; border: 1px solid rgba(239,234,223,.14); }
+    .row small { display: block; font: 400 19px/1 "Space Mono"; letter-spacing: .06em; color: #9b98a8; }
+    .row b { display: block; margin-top: 12px; font: 700 34px/1.1 "Urbanist"; }
+    .row span { display: block; margin-top: 8px; font: 400 20px/1.3 "Space Mono"; color: #b9b4cc; }
+    #g-ok { top: 560px; border-color: rgba(166,228,191,.55); } #g-ok b { color: #a6e4bf; }
+    #g-bad { top: 740px; border-color: rgba(229,72,46,.6); } #g-bad b { color: #ff9a8b; }
+    .g-fine { position: absolute; left: 110px; top: 922px; width: 560px; font: 400 19px/1.4 "Space Mono"; color: #8f8c9c; }
+    .pane { position: absolute; left: 740px; top: 60px; width: 1120px; height: 960px; border-radius: 24px; overflow: hidden; border: 1px solid rgba(239,234,223,.12); background: #0c0d15; }
+    .pane video { position: absolute; left: 0; top: 0; width: 1100px; height: 1000px; transform: scale(1.0182); transform-origin: 0 0; }
+    .lbl { position: absolute; left: 752px; top: 24px; font: 400 20px/1 "Space Mono"; letter-spacing: .12em; text-transform: uppercase; color: #9b98a8; }
+    .call { position: absolute; left: 780px; top: 900px; white-space: nowrap; padding: 16px 24px; border-radius: 18px; background: rgba(12,13,21,.95); border: 1px solid rgba(229,72,46,.6); font: 400 22px/1.3 "Space Mono"; color: #efeadf; }
+    .call b { color: #ff9a8b; font-weight: 400; }
+  </style>
+  <div id="root" data-composition-id="guard4" data-width="1920" data-height="1080">
+    <div class="g-tag" id="g-tag">KabutoGuard · Uniswap v4 hook</div>
+    <div class="g-h" id="g-h">A pool bots <em>can't trade.</em></div>
+    <div class="g-p" id="g-p">beforeSwap reads the EIP-8141 transaction it runs in and needs an earlier VERIFY frame that pinned this pool's price.</div>
+    <div class="row" id="g-ok"><small>FRAME TX · TYPE 6 · PRICE PINNED</small><b>status 1 · swapped</b><span>0xd1962486…f861</span></div>
+    <div class="row" id="g-bad"><small>PLAIN LEGACY TX · TYPE 0 · SAME ROUTER</small><b>status 0 · NotFrameTx()</b><span>0x8fd351e2…1829</span></div>
+    <div class="g-fine" id="g-fine">Receipts are the original devnet transactions; the cast call replays the plain swap against today's state.</div>
+    <div class="lbl" id="g-lbl">read-only cast · chain 1337 gateway · live</div>
+    <div class="pane"><video id="g-v" class="clip" data-start="0" data-duration="13" data-media-start="1" src="assets/footage/guard4.mp4" muted playsinline></video></div>
+    <div class="call" id="g-call">v4 WrappedError(hook, beforeSwap, <b>0x2e55cc19</b>) · <b>NotFrameTx()</b></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const E = "power3.out";
+    tl.from("#g-tag", { y: 16, opacity: 0, duration: 0.5, ease: E }, 0.2)
+      .from("#g-h", { y: 30, opacity: 0, duration: 0.8, ease: E }, 0.35)
+      .from("#g-p", { y: 20, opacity: 0, duration: 0.6, ease: E }, 1.2)
+      .from("#g-lbl", { y: -12, opacity: 0, duration: 0.5 }, 0.2)
+      .from("#g-ok", { x: -40, opacity: 0, duration: 0.6, ease: E }, 2.4)
+      .from("#g-bad", { x: -40, opacity: 0, duration: 0.6, ease: E }, 5.2)
+      .from("#g-fine", { opacity: 0, duration: 0.6 }, 7.8)
+      .from("#g-call", { y: 24, opacity: 0, duration: 0.6, ease: E }, 11.0);
+    window.__timelines["guard4"] = tl;
+  </script>
+</template>
