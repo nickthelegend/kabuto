@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { LazyVideo } from "./landing/LazyVideo";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -6,7 +7,10 @@ import { D } from "./lib/config";
 import { pub } from "./lib/chain";
 import { priceFromSqrt, sqrtPrice } from "./lib/market";
 import { PROOF, REPLAY } from "./lib/proof";
-import { checkMainnetTx, EXAMPLES, type Verdict } from "./lib/mainnet";
+import { Checker } from "./landing/Checker";
+import { Guard } from "./landing/Guard";
+import { EVIDENCE, LIVE_RUN } from "./landing/evidence";
+import { useMotionOk } from "./landing/motion";
 import "./landing.css";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -46,6 +50,7 @@ function useLivePrice() {
 export function Landing() {
   const root = useRef<HTMLDivElement>(null);
   const live = useLivePrice();
+  const motionOk = useMotionOk();
 
   useGSAP(() => {
     const mm = gsap.matchMedia();
@@ -105,7 +110,9 @@ export function Landing() {
       /* proof rows + sdk lines */
       ScrollTrigger.batch(".ln-proof li", { start: "top 90%", onEnter: (els) => gsap.from(els, { y: 24, opacity: 0, stagger: 0.06, duration: 0.6, ease: "power3.out" }) });
       gsap.from(".ln-code .ln", { opacity: 0, x: -14, stagger: 0.12, duration: 0.5, ease: "power2.out", scrollTrigger: { trigger: ".ln-code", start: "top 75%" } });
-      gsap.from(".ln-head", { y: 40, opacity: 0, duration: 1, ease: "power3.out", stagger: 0.1, scrollTrigger: { trigger: ".ln-head", start: "top 85%" } });
+      ScrollTrigger.batch(".ln-head", { start: "top 88%", onEnter: (els) => gsap.from(els, { y: 40, opacity: 0, duration: 1, ease: "power3.out", stagger: 0.1 }) });
+      gsap.from(".ln-gate-row", { y: 24, opacity: 0, duration: 0.9, ease: "power3.out", stagger: 0.15, scrollTrigger: { trigger: ".ln-gate", start: "top 80%" } });
+      ScrollTrigger.batch(".ln-guard-grid > a", { start: "top 90%", onEnter: (els) => gsap.from(els, { y: 30, opacity: 0, stagger: 0.08, duration: 0.7, ease: "power3.out" }) });
       gsap.fromTo(".ln-end-glow", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, ease: "none", scrollTrigger: { trigger: ".ln-end", start: "top bottom", end: "center center", scrub: true } });
     });
     const refresh = () => ScrollTrigger.refresh();
@@ -120,22 +127,22 @@ export function Landing() {
     <div className="ln" ref={root}>
       <nav className="ln-nav">
         <a className="ln-wm" href="#/">Kabuto</a>
-        <div className="ln-links"><a href="#check">Check a swap</a><a href="#how">How it works</a><a href="#sdk">SDK</a><a href="#proof">Proof</a></div>
+        <div className="ln-links"><a href="#check">Check a swap</a><a href="#guard">KabutoGuard</a><a href="#how">How it works</a><a href="#sdk">SDK</a><a href="#proof">Proof</a></div>
         <a className="ln-cta" href="#/app">Launch app</a>
       </nav>
 
       <header className="ln-hero">
         <div className="ln-hero-media" aria-hidden>
-          <video src="/hero.mp4" poster="/hero.jpg" autoPlay muted loop playsInline />
+          {motionOk ? <video src="/hero.mp4" poster="/hero.jpg" autoPlay muted loop playsInline preload="auto" /> : <img src="/hero.jpg" alt="" />}
         </div>
         <div className="ln-hero-shade" aria-hidden />
         <div className="ln-hero-copy">
           <span className="ln-eyebrow"><i />Live on the EIP-8141 devnet · Uniswap v4{live ? ` · block ${live.block.toLocaleString("en-US")}` : ""}</span>
           <h1 className="ln-h1">{words("Swap at your price.")}<br /><em>{words("Or not at all.")}</em></h1>
-          <div className="ln-ctas"><a className="ln-btn g" href="#/app">Launch app</a><a className="ln-btn l" href="#bot">See the sandwich</a></div>
+          <div className="ln-ctas"><a className="ln-btn g" href="#/app">Launch app</a><a className="ln-btn l" href="#check">Were you sandwiched?</a></div>
         </div>
         <div className="ln-widgets">
-          <div className="ln-chip bad"><small>Ordinary wallet</small><b>Sandwiched · −1.80%</b><span>front · you · back, one block</span></div>
+          <a className="ln-chip bad" href={tx(LIVE_RUN.sandwiched)} target="_blank" rel="noreferrer"><small>Ordinary wallet · devnet run</small><b>Sandwiched · −1.80%</b><span>front · you · back, one block ↗</span></a>
           <div className="ln-swap" aria-hidden>
             <div className="ln-swap-h"><b>Swap</b><span>Uniswap v4</span></div>
             <div className="ln-bx"><small>You pay</small><div><b>1,500</b><span className="ln-tk"><i />kUSD</span></div></div>
@@ -143,14 +150,14 @@ export function Landing() {
             <div className="ln-pr"><i className="sh" />Sandwich protection<i className="t" /></div>
             <div className="ln-go">Swap</div>
           </div>
-          <div className="ln-chip good"><small>Kabuto</small><b>Sandwich blocked</b><span>never included · 0 gas</span></div>
+          <a className="ln-chip good" href={tx(LIVE_RUN.blocked)} target="_blank" rel="noreferrer"><small>Kabuto · same bot</small><b>Sandwich blocked</b><span>never included · 0 gas ↗</span></a>
         </div>
       </header>
 
-      <section className="ln-stats">
-        <div className="ln-stat"><b><span className="ln-count" data-to={REPLAY.uniqueVictims}>{REPLAY.uniqueVictims}</span></b><span>swaps sandwiched on Uniswap v4 mainnet in {REPLAY.hours} hours</span></div>
-        <div className="ln-stat"><b className="g"><span className="ln-count" data-to={stoppedPct}>{stoppedPct}</span>%</b><span>of them a ±{REPLAY.bandPct}% Kabuto pin would have stopped</span></div>
-        <div className="ln-stat"><b><span className="ln-count" data-to={0}>0</span> gas</b><span>paid when a protected swap is blocked</span></div>
+      <section className="ln-stats" aria-label="Measured, with sources">
+        <a className="ln-stat" href={EVIDENCE.replay} target="_blank" rel="noreferrer"><b><span className="ln-count" data-to={REPLAY.uniqueVictims}>{REPLAY.uniqueVictims}</span></b><span>swaps sandwiched on Uniswap v4 mainnet in {REPLAY.hours} hours</span><small>Replay, blocks {REPLAY.fromBlock.toLocaleString("en-US")}–{REPLAY.toBlock.toLocaleString("en-US")} ↗</small></a>
+        <a className="ln-stat" href={EVIDENCE.replayMethod} target="_blank" rel="noreferrer"><b className="g"><span className="ln-count" data-to={stoppedPct}>{stoppedPct}</span>%</b><span>of them a ±{REPLAY.bandPct}% Kabuto pin would have stopped</span><small>{REPLAY.stopped} of {REPLAY.evaluated} evaluated · METHOD.md ↗</small></a>
+        <a className="ln-stat" href={tx(PROOF[2].hash)} target="_blank" rel="noreferrer"><b><span className="ln-count" data-to={0}>0</span> gas</b><span>paid when a protected swap is blocked</span><small>Cancelled on the devnet · {short(PROOF[2].hash)} ↗</small></a>
       </section>
 
       <Checker />
@@ -165,7 +172,7 @@ export function Landing() {
               <div className="ln-row bot r0"><span className="n">idx 0</span><span className="lbl">Bot buys first</span><span className="v">front-run</span></div>
               <div className="ln-row you r1"><span className="n">idx 1</span><span className="lbl">Your swap</span><span className="v">fills worse</span></div>
               <div className="ln-row bot r2"><span className="n">idx 2</span><span className="lbl">Bot sells into you</span><span className="v">back-run</span></div>
-              <a className="ln-res bad" href={tx(PROOF[3].hash)} target="_blank" rel="noreferrer"><small>You lost</small><b>−1.80%</b></a>
+              <a className="ln-res bad" href={tx(LIVE_RUN.sandwiched)} target="_blank" rel="noreferrer"><small>You lost</small><b>−1.80%</b></a>
             </div>
             <div className="ln-col">
               <h3>Kabuto <span>price pinned ±0.5%</span></h3>
@@ -178,12 +185,14 @@ export function Landing() {
         </div>
       </section>
 
+      <Guard />
+
       <section className="ln-steps" id="how">
         <div className="ln-steps-h"><span className="ln-tag">How it works</span><h2 className="ln-h2">Four frames.</h2></div>
         <div className="ln-track">
           {STEPS.map((s) => (
             <article className="ln-step" key={s.n}>
-              <div className="ln-step-media">{s.video ? <video src={s.video} poster={s.img} autoPlay muted loop playsInline /> : <img src={s.img} alt="" />}</div>
+              <div className="ln-step-media">{s.video && motionOk ? <LazyVideo src={s.video} poster={s.img} /> : <img src={s.img} alt="" loading="lazy" decoding="async" width={1100} height={825} />}</div>
               <div className="ln-step-cap"><span className="ln-tag">{s.n}</span><b>{s.t}</b></div>
             </article>
           ))}
@@ -206,6 +215,7 @@ export function Landing() {
             </li>
           ))}
         </ul>
+        <p className="ln-proof-more">Every test run, pass and failure: <a href={EVIDENCE.testing} target="_blank" rel="noreferrer">TESTING.md ↗</a> · Mainnet checker source: <a href={EVIDENCE.checkerSource} target="_blank" rel="noreferrer">mainnet.ts ↗</a></p>
       </section>
 
       <section className="ln-end ln-wrap">
@@ -219,54 +229,5 @@ export function Landing() {
         <span><a href={D.explorer} target="_blank" rel="noreferrer">Explorer</a></span>
       </footer>
     </div>
-  );
-}
-
-const es = (h: string) => `https://etherscan.io/tx/${h}`;
-const pct = (n: number) => `${Math.abs(n).toFixed(2)}%`;
-
-/** "Was I sandwiched?" against real Ethereum mainnet Uniswap v4 data, in the browser. */
-function Checker() {
-  const [hash, setHash] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [v, setV] = useState<Verdict | null>(null);
-  const run = async (h: string) => {
-    setHash(h); setBusy(true); setErr(null); setV(null);
-    try { setV(await checkMainnetTx(h)); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); }
-  };
-  return (
-    <section className="ln-chk ln-wrap" id="check">
-      <div className="ln-chk-l">
-        <span className="ln-tag">Ethereum mainnet · today</span>
-        <h2 className="ln-h2">Were you<br />sandwiched?</h2>
-        <p className="ln-chk-p">Paste any mainnet Uniswap v4 swap. Kabuto reads that block and tells you.</p>
-      </div>
-      <div className="ln-chk-card">
-        <form onSubmit={(e) => { e.preventDefault(); if (hash.trim()) void run(hash); }}>
-          <label htmlFor="ln-chk-in" className="sr">Mainnet transaction hash</label>
-          <input id="ln-chk-in" value={hash} onChange={(e) => setHash(e.target.value)} placeholder="0x… transaction hash" spellCheck={false} autoComplete="off" />
-          <button type="submit" disabled={busy || !hash.trim()}>{busy ? "Reading mainnet…" : "Check"}</button>
-        </form>
-        <div className="ln-chk-ex"><span>Real victims:</span>{EXAMPLES.map((e) => <button key={e.hash} onClick={() => void run(e.hash)} disabled={busy}>{e.label}</button>)}</div>
-        {err && <div className="ln-chk-r bad" role="alert"><b>Couldn't check</b><p>{err}</p></div>}
-        {v && <div className={`ln-chk-r ${v.kind === "sandwiched" ? "bad" : "ok"}`} aria-live="polite">
-          {v.kind === "not-found" && <><b>Not found on mainnet</b><p>No mined transaction with that hash.</p></>}
-          {v.kind === "no-v4-swap" && <><b>No Uniswap v4 swap here</b><p>Block {v.block.toLocaleString("en-US")}: this transaction didn't swap through the v4 PoolManager.</p></>}
-          {v.kind === "clean" && <><b>Not sandwiched</b><p>No front-run and back-run around this swap in its pool, block {v.block.toLocaleString("en-US")}.</p></>}
-          {v.kind === "sandwiched" && <>
-            <b>Sandwiched in block {v.block.toLocaleString("en-US")}</b>
-            <div className="ln-chk-kv">
-              {v.priceMovePct !== null && <div><small>Bot moved the price first</small><span>{pct(v.priceMovePct)}</span></div>}
-              {v.filledWorsePct !== null && <div><small>You filled worse than the pre-attack price</small><span>{pct(v.filledWorsePct)}</span></div>}
-              <div><small>Attacker ({v.match})</small><a href={`https://etherscan.io/address/${v.attacker}`} target="_blank" rel="noreferrer">{v.attacker.slice(0, 8)}…{v.attacker.slice(-4)}</a></div>
-              <div><small>Front-run · back-run</small><span><a href={es(v.front)} target="_blank" rel="noreferrer">front ↗</a> · <a href={es(v.back)} target="_blank" rel="noreferrer">back ↗</a></span></div>
-            </div>
-            {v.stoppedByPin !== null && <div className={`ln-chk-k ${v.stoppedByPin ? "yes" : "no"}`}>{v.stoppedByPin ? "With Kabuto (±0.5% pin) this swap would have been invalid: never included, 0 gas." : "This front-run stayed inside ±0.5%: a ±0.5% pin would not have stopped it (a tighter pin would)."}</div>}
-            <p className="ln-chk-fine">"Filled worse" includes the pool fee and your own price impact. Same detection rules as our 27-hour replay.</p>
-          </>}
-        </div>}
-      </div>
-    </section>
   );
 }
