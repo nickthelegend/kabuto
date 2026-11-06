@@ -1,30 +1,52 @@
-# Kabuto: pitch and judge Q&A
+# Kabuto: 2-minute pitch and judge Q&A
 
-## 30-second pitch
-"A sandwich needs your swap to land after the bot's. Today it always can, because your transaction is valid whatever the price does. Kabuto moves the price check into the transaction's own VERIFY frame. If a bot moves the price, your swap stops being a valid transaction: it's never included and you pay nothing. Or skip routing: sign one intent, anyone can fill it through Uniswap v4 and pay the gas, and your account rejects any fill that breaks the shape. No settlement contract, no auction server: the mempool is the auction. Live on the EF frame-transaction devnet with real Uniswap v4."
+Every number below is in the README, TESTING.md or a linked transaction. If a judge asks for a number that isn't here, say you don't have it.
 
-## Demo beats (4 min)
-1. Mainnet number (497 sandwiched swaps in 27 h; 77% stoppable at ±0.5%).
-2. Normal wallet swap → real bot sandwiches it → filled 1.8% worse.
-3. Same swap with Kabuto → bot front-runs → "Never included · 0 gas" → open the Cancelled tx on the explorer.
-4. Post an intent → filler fills through v4, pays gas → attacker filler's tampered fill refused.
-5. SDK + proof table.
+## The 2-minute script (about 260 spoken words)
+
+| Time | Show | Say |
+|---|---|---|
+| 0:00–0:20 | Landing hero | "When you swap on a DEX, a bot can see your swap, buy first, and sell back to you at a worse price. That's a sandwich. It works because your swap is still a valid transaction after the bot moved the price. On Uniswap v4 mainnet, in 27 hours, we counted 497 victim swaps." |
+| 0:20–0:45 | DEX, protection **off**, 1,500 kUSD; then the bot terminal | "Here's an ordinary swap with 2% slippage. Our real sandwich bot front-runs it and back-runs it in the same block: positions 0, 1 and 2. I got 1.8% less than my quote: 27 kUSD gone." |
+| 0:45–1:10 | Protection **on**; the result card shows "Sandwich blocked · Not included · 0 gas" and "You saved"; open the explorer: `Cancelled` | "Same swap, protection on. Kabuto puts the price check inside the transaction's own EIP-8141 VERIFY frame. The bot front-runs again, the mempool re-checks my transaction, the price is out of my band, and my swap simply stops existing. Not reverted: never included. I pay zero gas, and the bot is left holding its own trade." |
+| 1:10–1:35 | Intents tab: sign, filler fills, Arkiv board row | "Or don't route at all. I sign one intent, no gas: at most this much in, at least this much out. Anyone can fill it through Uniswap v4 and pay the gas. My account checks every frame of the fill, so the tampered fills we tried were refused before reaching a block. The board of open intents lives on Arkiv and expires with each intent." |
+| 1:35–1:50 | Landing proof list: KabutoGuard rows | "And for Uniswap: KabutoGuard, a v4 hook that reads the transaction it runs in. In this pool, only price-pinned frame transactions can swap. A bot's plain transaction reverts." |
+| 1:50–2:00 | Logo, repo URL | "Live on the EF frame-transaction devnet with Uniswap v4. Every claim is a transaction you can open. Kabuto: swaps that only happen at your price." |
+
+Fallback if the devnet stalls on stage: open the three proof transactions from the README's "Three live proofs" table and say "this is the run from this morning", never present an old run as live.
+
+## Numbers you can quote (and their source)
+
+| Number | Source |
+|---|---|
+| 497 victim transactions, 503 same-sender triples, 27 hours, blocks 26,299,825–26,307,824 | README "How big the problem is"; `packages/replay` |
+| 388 of 501 evaluated (77%) moved the price more than 0.5% | same |
+| 1.80% worse, 27.04 kUSD lost on 1,500 kUSD; indices 0, 1, 2 of block 407,046 | tx `0xbf074d56…de29` |
+| Protected swap dropped as `Cancelled` at block 407,052, 0 gas | tx `0x2e8b5b7c…2e92` |
+| Intent filled by a third party: 0.00886 WETH, signed minimum 0.00885 | tx `0xdfd70b01…c065` |
+| 19 Foundry tests (10 core + 9 KabutoGuard), 2 fuzz tests × 256 runs | TESTING.md |
+| Validation-gas cap 100k; 78,500 left for `verifyIntent` with a P256 owner | `packages/sdk/src/index.ts:45-51` |
+
+Don't quote a dollar figure for mainnet: USD pricing covered about 1% of candidates.
 
 ## Q&A
-**Why not slippage 0 / minOut?** A failed swap still lands and you pay for it, and the bot still takes everything up to your limit. Kabuto's check runs before the transaction is valid, so a moved price means there is nothing to pay for.
 
-**Why not Flashbots Protect / MEV Blocker / CoW?** Those are trusted relays or solvers. Kabuto's guarantee is enforced by the protocol: any builder, any mempool.
+**Why not slippage 0 / minOut?** A failed swap still lands and you pay its gas, and the bot still takes everything up to your limit. Kabuto's check runs before the transaction is valid, so a moved price leaves nothing to pay for.
 
-**EIP-8141 isn't on mainnet.** Correct, it's considered for Hegotá. We built on the EF's public devnet with Uniswap v4's real mainnet bytecode, so it's ready when frame transactions ship. The SDK can fall back to router-level slippage + private RPC on today's chains.
+**Why not Flashbots Protect / MEV Blocker / CoW?** Those depend on a trusted relay or solver network. Kabuto's check is part of the transaction's own validity, so it doesn't depend on which mempool or builder sees it.
 
-**What stops a filler from stealing?** `verifyIntent` binds the signature to every frame, as EIP-8141's security section requires: one tokenIn transfer ≤ maxIn (exactly 68 bytes of calldata), filler frames are DEFAULT (caller ENTRY_POINT, cannot act as the account), the whole thing is one atomic batch with no value, and the last frame settles against the balance read during VERIFY. We tried extra SENDER frames, over-max pulls and a dropped atomic flag: all refused before a block. An underpaying fill lands, fails settlement, and rolls back; only the filler pays.
+**EIP-8141 isn't on mainnet.** Correct, it's proposed for Hegotá. We built on the EF's public devnet against the Uniswap v4 contracts predeployed there. The only mainnet piece is read-only: the replay and the "Were you sandwiched?" checker.
 
-**Doesn't a cancelled swap hurt the account's reputation?** ERC-8421 counts admitted-but-not-included txs against staked entities. That's the honest open question; we documented it in EF-FINDINGS.md. The wallet re-quotes and retries for free, and we'd like the alt-mempool rules to treat price-invalidation differently from spam.
+**What stops a filler from stealing?** `verifyIntent` binds the signature to every frame, as EIP-8141's security section asks: one tokenIn transfer of at most maxIn (exactly 68 bytes of calldata), filler frames in DEFAULT mode (the caller is the entry point, so they can't act as the account), one atomic batch with no value, and a final settle against the balance read during VERIFY. An extra SENDER frame, an over-max pull and a dropped atomic flag were all refused at admission. An underpaying fill lands, fails settlement and rolls back; only the filler pays.
 
-**Who pays when a sandwiched swap is cancelled?** Nobody. The tx never enters a block. The bot paid for its own front-run and is left holding the position (−217 kUSD marked in our live run).
+**Doesn't a cancelled swap hurt the account's reputation?** ERC-8421 counts admitted-but-not-included transactions against staked senders. That's the honest open question, written up in EF-FINDINGS.md: we'd like price invalidation scored differently from spam.
 
-**Why Uniswap?** The price check reads the v4 PoolManager directly with `extsload` (StateLibrary), swaps settle through v4's flash accounting, quotes come from the v4 Quoter, and fillers route through v4. FEEDBACK.md has what we hit.
+**Who pays when a sandwiched swap is cancelled?** Not the user: the transaction never enters a block. The bot paid for its own front-run and is left holding that position.
 
-**Gas?** The whole validation prefix must fit in 100k (sum of VERIFY limits + 2,800 per secp256k1 / 6,700 per P256 signature). verifyIntent does a full frame-shape check inside ~78k for a P256 owner.
+**Why is this a Uniswap project?** The price check reads the v4 PoolManager with `StateLibrary.getSlot0` (`extsload`), swaps settle through v4 flash accounting in our router and filler, quotes come from the V4 Quoter, and KabutoGuard is a v4 hook. The README has a line-by-line pointer table; FEEDBACK.md has what we hit.
 
-**What's the ±0.5% based on?** It's the user's band (adjustable in the UI). The replay shows 77% of same-sender sandwich triples moved the price more than 0.5%.
+**Why Arkiv and not your relay's database?** Fillers shouldn't have to trust our relay. On Arkiv, open intents are queryable by status, chain and deadline, filtered by a known writer, and expire at the intent's own deadline. Settlement never leaves chain 1337.
+
+**What's the ±0.5% based on?** It's the user's band, adjustable in the UI. In the replay, 77% of the evaluated same-sender sandwiches moved the price more than 0.5%.
+
+**Did your e2e suite pass?** Its last full run: 6 cases passed, 4 timed out waiting for inclusion while the public devnet stalled. Every hash is in TESTING.md; the live app runs since then are in the README.
