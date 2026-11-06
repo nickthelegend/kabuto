@@ -1,98 +1,125 @@
 /**
- * "Was I sandwiched?" on real Ethereum mainnet. Read-only: public RPCs, the Uniswap v4 PoolManager Swap logs of the
- * transaction's block, and the same front/victim/back rules as packages/replay (detector.ts, measure.ts).
+ * "Was I sandwiched?" on real Ethereum mainnet. Read-only: keyless public RPCs (src/landing/rpc.ts), the Uniswap v4
+ * PoolManager Swap logs of the transaction's block, and the same front/victim/back rules as packages/replay
+ * (src/landing/detect.ts mirrors detector.ts and measure.ts).
  */
-import { decodeEventLog, parseAbiItem, toEventSelector, type Hex } from "viem";
+import { pad, type Hex } from "viem";
+import { BAND, MANAGER, SWAP_TOPIC, findSandwich, measure, priceBeforeInBlock, swapsFromLogs, TX_HASH, ADDRESS, type RawLog, type Tx } from "../landing/detect";
+import { call, getLogs, lastLogBefore } from "../landing/rpc";
 
-const URLS = ["https://ethereum-rpc.publicnode.com", "https://eth.drpc.org"];
-export const MANAGER = "0x000000000004444c5dc75cb358380d2e3de08a90";
-const SWAP = parseAbiItem("event Swap(bytes32 indexed id, address indexed sender, int128 amount0, int128 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick, uint24 fee)");
-const SWAP_TOPIC = toEventSelector(SWAP);
-export const BAND = 0.005;
+export { BAND, MANAGER };
+/** How far back the pre-attack price is looked up when the front-run is the pool's first swap in its block. */
+export const PRICE_LOOKBACK = 3000;
+/** Address mode bounds: ~24 h of blocks, and at most this many of the newest transactions. */
+export const SCAN_BLOCKS = 7200;
+export const SCAN_MAX_TXS = 30;
 
-type RawLog = { address: Hex; topics: Hex[]; data: Hex; blockNumber: Hex; transactionHash: Hex; transactionIndex: Hex; logIndex: Hex; removed?: boolean };
-type Swap = { poolId: Hex; amount0: bigint; amount1: bigint; sqrtPriceX96: bigint; txIndex: number; logIndex: number; hash: Hex; pre: bigint | null };
-
-let serial = 0;
-async function rpc<T>(method: string, params: unknown[]): Promise<T> {
-  let last: unknown;
-  // publicnode refuses old-block log queries without a paid token; dRPC serves them in small windows.
-  for (const url of method === "eth_getLogs" ? [...URLS].reverse() : URLS) {
-    try {
-      const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: ++serial, method, params }) });
-      const j = await r.json();
-      if (j.error) throw new Error(j.error.message);
-      return j.result as T;
-    } catch (e) { last = e; }
-  }
-  throw new Error(`Mainnet RPC unavailable (${last instanceof Error ? last.message : String(last)})`);
-}
-
-const decode = (l: RawLog): Swap => {
-  const { args } = decodeEventLog({ abi: [SWAP], data: l.data, topics: l.topics as [Hex, ...Hex[]] });
-  const a = args as { id: Hex; amount0: bigint; amount1: bigint; sqrtPriceX96: bigint };
-  return { poolId: a.id.toLowerCase() as Hex, amount0: a.amount0, amount1: a.amount1, sqrtPriceX96: a.sqrtPriceX96, txIndex: Number(BigInt(l.transactionIndex)), logIndex: Number(BigInt(l.logIndex)), hash: l.transactionHash, pre: null };
-};
-const hex = (n: number) => `0x${n.toString(16)}`;
-
-/** Latest Swap price in this pool before `block`: scan back in 100-block windows (dRPC's free limit), five at a time, up to 3,000 blocks. Logs only, no archive state. */
-async function priceBefore(poolId: Hex, block: number): Promise<bigint | null> {
-  for (let top = block - 1; top > 0 && top > block - 3000; top -= 500) {
-    const windows = [0, 1, 2, 3, 4].map((k) => top - k * 100).filter((t) => t > 0);
-    const results = await Promise.all(windows.map((t) => rpc<RawLog[]>("eth_getLogs", [{ fromBlock: hex(Math.max(0, t - 99)), toBlock: hex(t), address: MANAGER, topics: [SWAP_TOPIC, poolId] }])));
-    for (const logs of results) if (logs.length) return decode(logs[logs.length - 1]).sqrtPriceX96;
-  }
-  return null;
-}
-
+export type Progress = (step: string) => void;
 export type Verdict =
-  | { kind: "not-found" }
-  | { kind: "no-v4-swap"; block: number }
-  | { kind: "clean"; block: number; poolId: Hex }
-  | { kind: "sandwiched"; block: number; poolId: Hex; front: Hex; back: Hex; attacker: Hex; match: "same sender" | "same contract"; priceMovePct: number | null; stoppedByPin: boolean | null; filledWorsePct: number | null };
+  | { kind: "not-found"; hash: Hex }
+  | { kind: "failed-tx"; hash: Hex; block: number }
+  | { kind: "no-v4-swap"; hash: Hex; block: number }
+  | { kind: "clean"; hash: Hex; block: number; pools: number; swapsInBlock: number }
+  | { kind: "sandwiched"; hash: Hex; block: number; poolId: Hex; front: Hex; back: Hex; attacker: Hex; victimFrom: Hex; match: "same sender" | "same contract"; priceMovePct: number | null; stoppedByPin: boolean | null; filledWorsePct: number | null };
 
-export async function checkMainnetTx(hash: string): Promise<Verdict> {
-  const h = hash.trim().toLowerCase();
-  if (!/^0x[0-9a-f]{64}$/.test(h)) throw new Error("Paste a 66-character Ethereum transaction hash (0x…)");
-  const receipt = await rpc<{ blockNumber: Hex; logs: RawLog[] } | null>("eth_getTransactionReceipt", [h]);
-  if (!receipt) return { kind: "not-found" };
-  const block = Number(BigInt(receipt.blockNumber));
-  const mine = receipt.logs.filter((l) => l.address.toLowerCase() === MANAGER && l.topics[0] === SWAP_TOPIC).map(decode);
-  if (!mine.length) return { kind: "no-v4-swap", block };
-  const victimSwap = mine[0];
-  const logs = await rpc<RawLog[]>("eth_getLogs", [{ fromBlock: hex(block), toBlock: hex(block), address: MANAGER, topics: [SWAP_TOPIC, victimSwap.poolId] }]);
-  const swaps = logs.filter((l) => !l.removed).map(decode).sort((a, b) => a.txIndex - b.txIndex || a.logIndex - b.logIndex);
-  let prev = await priceBefore(victimSwap.poolId, block);
-  for (const s of swaps) { s.pre = prev; prev = s.sqrtPriceX96; }
-  const vi = swaps.findIndex((s) => s.hash.toLowerCase() === h);
-  if (vi < 0) return { kind: "clean", block, poolId: victimSwap.poolId };
-  const victim = swaps[vi];
-  const tx = (x: Hex) => rpc<{ from: Hex; to: Hex | null }>("eth_getTransactionByHash", [x]);
-  const vtx = await tx(victim.hash);
-  // Same rules as packages/replay/src/detector.ts possibleTriples + detect.
-  for (const front of swaps.slice(0, vi)) {
-    if (front.txIndex >= victim.txIndex || front.amount0 === 0n || victim.amount0 === 0n || (front.amount0 > 0n) !== (victim.amount0 > 0n)) continue;
-    for (const back of swaps.slice(vi + 1)) {
-      if (victim.txIndex >= back.txIndex || (front.amount0 > 0n) === (back.amount0 > 0n)) continue;
-      const input = front.amount0 < 0n ? -front.amount0 : -front.amount1;
-      const output = front.amount0 < 0n ? back.amount0 : back.amount1;
-      if (input <= 0n || output <= 0n || (output > input ? output - input : input - output) * 10n > input) continue;
-      const [ftx, btx] = await Promise.all([tx(front.hash), tx(back.hash)]);
-      const fromMatch = ftx.from.toLowerCase() === btx.from.toLowerCase();
-      const toMatch = !!ftx.to && !!btx.to && ftx.to.toLowerCase() === btx.to.toLowerCase();
-      if ((!fromMatch && !toMatch) || vtx.from.toLowerCase() === ftx.from.toLowerCase() || vtx.from.toLowerCase() === btx.from.toLowerCase()) continue;
-      const move = front.pre ? (Number(front.sqrtPriceX96) / Number(front.pre)) ** 2 - 1 : null;
-      // Unit-free: the victim's realized token1/token0 ratio against the pool's raw spot before the front-run (includes the pool fee and the victim's own price impact).
-      let worse: number | null = null;
-      if (front.pre && victim.amount0 !== 0n && victim.amount1 !== 0n) {
-        const spot = (Number(front.pre) / 2 ** 96) ** 2;
-        const realized = Math.abs(Number(victim.amount1)) / Math.abs(Number(victim.amount0));
-        worse = victim.amount0 < 0n ? 1 - realized / spot : 1 - spot / realized;
-      }
-      return { kind: "sandwiched", block, poolId: victim.poolId, front: front.hash, back: back.hash, attacker: fromMatch ? ftx.from : (ftx.to as Hex), match: fromMatch ? "same sender" : "same contract", priceMovePct: move === null ? null : move * 100, stoppedByPin: move === null ? null : Math.abs(move) > BAND, filledWorsePct: worse === null ? null : worse * 100 };
+const lower = (h: string) => h.toLowerCase() as Hex;
+
+function txFetcher(signal?: AbortSignal) {
+  const cache = new Map<string, Promise<Tx>>();
+  return (h: Hex) => {
+    let p = cache.get(h);
+    if (!p) {
+      p = call<Tx | null>("eth_getTransactionByHash", [h], signal).then((t) => { if (!t) throw new Error(`Transaction ${h} not returned by the RPC`); return t; });
+      cache.set(h, p);
     }
+    return p;
+  };
+}
+
+/** Judge one transaction given every PoolManager Swap log of its block. */
+async function judge(h: Hex, block: number, blockLogs: RawLog[], getTx: (h: Hex) => Promise<Tx>, signal?: AbortSignal, progress?: Progress): Promise<Verdict> {
+  const all = swapsFromLogs(blockLogs);
+  const mine = all.filter((s) => s.hash === h);
+  if (!mine.length) return { kind: "no-v4-swap", hash: h, block };
+  const pools = [...new Set(mine.map((s) => s.poolId))];
+  for (const poolId of pools) {
+    const poolSwaps = all.filter((s) => s.poolId === poolId);
+    progress?.(`Testing ${poolSwaps.length} swaps in pool ${poolId.slice(0, 10)}… for a front-run and back-run`);
+    const hit = await findSandwich(poolSwaps, h, getTx);
+    if (!hit) continue;
+    progress?.("Sandwich found. Reading the pool price before the front-run");
+    let pre: bigint | null = priceBeforeInBlock(poolSwaps, hit.front);
+    if (pre === null) {
+      const prev = await lastLogBefore({ address: MANAGER, topics: [SWAP_TOPIC, poolId] }, block, PRICE_LOOKBACK, signal);
+      pre = prev ? swapsFromLogs([prev])[0]?.sqrtPriceX96 ?? null : null;
+    }
+    const m = measure(hit.front, hit.victim, pre);
+    return { kind: "sandwiched", hash: h, block, poolId, front: hit.front.hash, back: hit.back.hash, attacker: hit.match === "same sender" ? lower(hit.frontTx.from) : lower(hit.frontTx.to!), victimFrom: lower(hit.victimTx.from), match: hit.match, ...m };
   }
-  return { kind: "clean", block, poolId: victim.poolId };
+  return { kind: "clean", hash: h, block, pools: pools.length, swapsInBlock: all.length };
+}
+
+export async function checkMainnetTx(hash: string, opts: { signal?: AbortSignal; progress?: Progress } = {}): Promise<Verdict> {
+  const { signal, progress } = opts;
+  const h = lower(hash.trim());
+  if (!TX_HASH.test(h)) throw new Error("That isn't a transaction hash. Paste the 66-character 0x… hash from Etherscan or your wallet.");
+  progress?.("Reading the transaction receipt");
+  const receipt = await call<{ blockNumber: Hex; status: Hex; logs: RawLog[] } | null>("eth_getTransactionReceipt", [h], signal);
+  if (!receipt) return { kind: "not-found", hash: h };
+  const block = Number(BigInt(receipt.blockNumber));
+  if (receipt.status === "0x0") return { kind: "failed-tx", hash: h, block };
+  if (!swapsFromLogs(receipt.logs).length) return { kind: "no-v4-swap", hash: h, block };
+  progress?.(`Reading every Uniswap v4 swap in block ${block.toLocaleString("en-US")}`);
+  const blockLogs = await getLogs({ address: MANAGER, topics: [SWAP_TOPIC] }, block, block, signal);
+  return judge(h, block, blockLogs, txFetcher(signal), signal, progress);
+}
+
+export type AddressScan = {
+  address: Hex; head: number; fromBlock: number;
+  /** Transactions in the window where this address sent or received an ERC-20. */
+  tokenTxs: number;
+  /** How many of those (newest first) were checked; < tokenTxs when the cap was hit. */
+  checked: number;
+  results: Verdict[];
+};
+
+/**
+ * Scan an address's recent Uniswap v4 swaps. Finds transactions where the address sent or received an ERC-20 in the
+ * last SCAN_BLOCKS blocks (every v4 swap moves at least one ERC-20 unless both sides are native ETH, which v4 can't
+ * pair), keeps the ones with a PoolManager Swap, and judges each with the single-transaction rules.
+ */
+export async function scanAddress(address: string, opts: { signal?: AbortSignal; progress?: Progress } = {}): Promise<AddressScan> {
+  const { signal, progress } = opts;
+  const a = lower(address.trim());
+  if (!ADDRESS.test(a)) throw new Error("That isn't an address. Paste a 42-character 0x… Ethereum address.");
+  progress?.("Reading the latest mainnet block");
+  const head = Number(BigInt(await call<Hex>("eth_blockNumber", [], signal)));
+  const fromBlock = head - SCAN_BLOCKS + 1;
+  const TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" as Hex;
+  const topic = pad(a);
+  progress?.(`Finding token transfers to and from ${a.slice(0, 8)}… in blocks ${fromBlock.toLocaleString("en-US")}–${head.toLocaleString("en-US")}`);
+  const [sent, got] = await Promise.all([
+    getLogs({ topics: [TRANSFER, topic] }, fromBlock, head, signal),
+    getLogs({ topics: [TRANSFER, null, topic] }, fromBlock, head, signal),
+  ]);
+  const txs = new Map<Hex, { block: number; index: number }>();
+  for (const l of [...sent, ...got]) if (!l.removed) txs.set(lower(l.transactionHash), { block: Number(BigInt(l.blockNumber)), index: Number(BigInt(l.transactionIndex)) });
+  const newest = [...txs.entries()].sort((x, y) => y[1].block - x[1].block || y[1].index - x[1].index).slice(0, SCAN_MAX_TXS);
+  const blocks = [...new Set(newest.map(([, t]) => t.block))];
+  const byBlock = new Map<number, RawLog[]>();
+  let done = 0;
+  for (const b of blocks) {
+    progress?.(`Reading Uniswap v4 swaps in block ${b.toLocaleString("en-US")} (${++done} of ${blocks.length})`);
+    byBlock.set(b, await getLogs({ address: MANAGER, topics: [SWAP_TOPIC] }, b, b, signal));
+  }
+  const getTx = txFetcher(signal);
+  const results: Verdict[] = [];
+  for (const [h, t] of newest) {
+    const logs = byBlock.get(t.block)!;
+    if (!logs.some((l) => lower(l.transactionHash) === h)) continue;
+    results.push(await judge(h, t.block, logs, getTx, signal, progress));
+  }
+  return { address: a, head, fromBlock, tokenTxs: txs.size, checked: newest.length, results };
 }
 
 /** Real victims from the 27-hour mainnet replay (packages/replay/out/sandwiches.jsonl), loss in USDT as measured there. */
