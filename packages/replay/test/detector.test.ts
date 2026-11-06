@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -40,6 +40,7 @@ describe('mainnet v4 detector', () => {
   });
 
   it('fetches that block from public mainnet RPC and reproduces the candidate', async () => {
+    await mkdir(join(root, 'cache'), { recursive: true }); // cache/ is git-ignored, so a clean checkout lacks it
     const cache = await mkdtemp(join(root, 'cache', 'live-test-'));
     try {
       const rpc = new Rpc(cache);
