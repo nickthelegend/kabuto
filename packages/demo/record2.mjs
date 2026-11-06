@@ -3,11 +3,16 @@
  *   node record2.mjs landing            -> takes/landing.webm
  *   node record2.mjs attack             -> takes/attack-dex.webm + takes/attack-term.webm (same start time)
  *   node record2.mjs intent             -> takes/intent.webm
+ * v4 additions (no wallet state needed, read-only):
+ *   node record2.mjs guard              -> takes/guard-term.webm (guard-proof.sh in ttyd on :3100, started and killed here)
+ *   node record2.mjs checker            -> takes/checker.webm (landing "Were you sandwiched?" on a real mainnet victim)
+ *   node record2.mjs arkiv              -> takes/arkiv-intent.webm + takes/arkiv-fill.webm (Rabdi explorer entities)
  * KABUTO_STATE: Playwright storage state for https://kabuto-self.vercel.app (devnet wallet; gitignored).
  * TTYD_URL: a ttyd serving `pnpm --dir packages/bot watch` (default http://localhost:7681).
  */
 import { chromium } from "playwright";
 import { mkdirSync, renameSync } from "node:fs";
+import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 const scene = process.argv[2];
 const OUT = fileURLToPath(new URL("./takes/", import.meta.url)); mkdirSync(OUT, { recursive: true });
@@ -69,5 +74,39 @@ if (scene === "intent") {
   while (Date.now() - t0 < 180000) { await sleep(2000); const c = p.locator(".dx-result").first(); if (await c.count() && /Received/.test(await c.innerText())) break; }
   await sleep(6000);
   await save(ctx, p, "intent");
+}
+if (scene === "guard") {
+  const script = fileURLToPath(new URL("./guard-proof.sh", import.meta.url));
+  const tty = spawn("ttyd", ["-p", "3100", "-i", "lo0", "-o", "-t", "fontSize=21", "-t", "fontFamily=Menlo", "-t", 'theme={"background":"#0c0d15","foreground":"#cfc9bb"}', "bash", script], { stdio: "ignore" });
+  try {
+    await sleep(1500);
+    const ctx = await ctxFor(OUT + "tmp", { width: 1100, height: 1000 }, false);
+    const p = await ctx.newPage();
+    await p.goto("http://127.0.0.1:3100"); await sleep(26000);
+    await save(ctx, p, "guard-term");
+  } finally { tty.kill(); }
+}
+
+if (scene === "checker") {
+  const ctx = await ctxFor(OUT + "tmp", { width: 1280, height: 720 }, false);
+  const p = await ctx.newPage();
+  await p.goto(`${APP}/#/`); await sleep(3000);
+  await p.evaluate(() => { document.getElementById("check").scrollIntoView({ block: "start" }); window.scrollBy(0, -70); }); await sleep(2500);
+  const ex = p.locator(".ln-chk-ex button").first();
+  await ex.hover(); await sleep(1500); await ex.click();
+  await p.waitForSelector(".ln-chk-r", { timeout: 60000 }); await sleep(7000);
+  log("checker", (await p.locator(".ln-chk-r").innerText()).replace(/\n+/g, " | "));
+  await save(ctx, p, "checker");
+}
+
+if (scene === "arkiv") {
+  const E = "https://rabdi.explorer.arkiv.network/entity/";
+  const ic = await ctxFor(OUT + "tmp", { width: 1100, height: 1000 }, false), fc = await ctxFor(OUT + "tmp2", { width: 1100, height: 1000 }, false);
+  const i = await ic.newPage(), f = await fc.newPage();
+  await Promise.all([i.goto(E + "0xd309c13a29b10ff87b4ecfd62721f168397ea25930a0a2e5dc8f0f910be420d0"), f.goto(E + "0xd9cc8020d93d9bdae3052f914a1770613cc2c4958edaf72cf0621cca76fd4e5f")]);
+  await sleep(9000);
+  for (let y = 0; y < 8; y++) { await Promise.all([i.mouse.wheel(0, 40), f.mouse.wheel(0, 40)]); await sleep(120); }
+  await sleep(5000);
+  await save(ic, i, "arkiv-intent"); await save(fc, f, "arkiv-fill");
 }
 await b.close();
