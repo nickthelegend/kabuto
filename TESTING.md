@@ -1,6 +1,22 @@
 # Kabuto testing
 
-## Results from this checkout
+## Fresh verification (Nov 6 2026, 04:05-04:35 UTC, branch `verify-audit` from `b969221`)
+
+Every suite that does not spend devnet ETH, rerun from a clean worktree. Claim-by-claim evidence is in [docs/AUDIT.md](docs/AUDIT.md).
+
+| Suite | Command | Passed | Failed | Skipped / not run |
+| --- | --- | ---: | ---: | --- |
+| Foundry | `forge test --root packages/contracts` | 19 (10 `KabutoTest` + 9 `KabutoGuardTest`) | 0 | 0; 2 fuzz tests × 256 runs |
+| Replay detector | `pnpm --dir packages/replay test` | 2 (captured fixture + live public mainnet RPC) | 0 | 0. Before `987a838` the mainnet case failed on a clean checkout (`ENOENT`, git-ignored `cache/`) |
+| SDK reads | `pnpm --dir packages/sdk exec vitest run test/read.test.ts` | 2 (live v4 quote + StateView read; secp256k1/P256 signature packing) | 0 | 0 |
+| SDK deployment (new) | `pnpm --dir packages/sdk exec vitest run test/deployment.test.ts` | 6 (both PoolIds recomputed, hook flag bits, predeploys, 100k gas budget) | 0 | 0; offline |
+| Arkiv | `pnpm --dir packages/filler exec vitest run test/arkiv.test.ts` | 2 (byte round trip, live Rabdi query) | 0 | 1 skipped (live write; needs `ARKIV_PRIVATE_KEY`) |
+| Bot (read-only cases) | `pnpm --dir packages/bot exec vitest run -t "decodes\|reconstructs\|sizes"` | 2 (captured frame decode, live eth_call sizing) | 1 | `reconstructs hashes from the real read-only bundler dump` failed because `debug_bundler_dumpMempool` returned an empty mempool; 1 not run (EOA sandwich case spends ETH and binds :8787) |
+| **Total offline / read-only** | | **33** | **1** | **2** |
+
+Not run, by decision: `packages/e2e` (live suite and soak), `packages/sdk/test/live.test.ts`, `packages/filler/test/live.test.ts` and the bot's EOA sandwich case. The test deployer holds 0.0498 devnet ETH, enough for a run, but the devnet has produced no block since **block 408,262 (2026-11-05 22:58:46 UTC)**. `eth_blockNumber` on both the ethrex RPC and the alt-mempool gateway still returned `0x63ac6` five hours later, and the hosted bot's `/status` reports `lastError: "ethrex: terminated"`. No transaction can be included, so a run would only time out.
+
+## Earlier results (Nov 5 2026)
 
 | Suite | Command | Passed | Failed | Other |
 | --- | --- | ---: | ---: | --- |
@@ -14,13 +30,13 @@ The funded full run is recorded in [`packages/e2e/out/run-2026-11-05T18-04-13-14
 | --- | --- | --- |
 | Protected swap | [0xb48830dd…af1fe](https://explorer.altmempool.wtf/tx/0xb48830dd240ff2248e4bdf542f204330f376db4ced3547e2661cff3b222af1fe) | Mined, success |
 | Price-moving bot swap | [0xd39c2107…d3af3](https://explorer.altmempool.wtf/tx/0xd39c2107fcac16bec63236edd2a3f81cc7ca52d01bd0d72055a1f87a6d6d3af3) | Mined; following pinned swap refused at admission, account ETH unchanged |
-| Bot-first race | [0x4d2b299f…da8b5](https://explorer.altmempool.wtf/tx/0x4d2b299f4c0f0049005137aefb407988fe8f2ff61948431d10086440c45da8b5) | `Cancelled`, no receipt, account ETH unchanged |
-| Sponsored swap | [0xc8831ad1…c6872](https://explorer.altmempool.wtf/tx/0xc8831ad160bc1979381d2a7f160ef92070c0998237a565a7e6fecff5a21c6872) | Admitted with successful frame simulation; not mined within 120 s, later replaced by another same-nonce submission |
-| Sponsored retry | [0x5fd5af51…6c0a5](https://explorer.altmempool.wtf/tx/0x5fd5af51dea748a0b3b665c41b07a96a7e64b03ae006ed3768163cf5f206c0a5) | Admitted, remained `New` for 120 s, later `Cancelled` |
-| P256 retry with correct nonce | [0x84746cac…3c49f](https://explorer.altmempool.wtf/tx/0x84746cac988e39f8bff877e587a9de847405d4c02ca86586c899a5832863c49f) | Admitted, stayed `New` for 120 s |
-| Intent fill retry | [0x877b80cd…67a15](https://explorer.altmempool.wtf/tx/0x877b80cdafb630f107638819f862a570f5452b1c08a4d3cb4e088e05ed167a15) | Admitted, five simulated frames successful, stayed `New` for 120 s |
-| Underpay retry | [0x13f15852…87cde](https://explorer.altmempool.wtf/tx/0x13f158526206a10d702052b9244b558d4479c16f571912a91b8253f865087cde) | Admitted, settlement frame simulated as reverted, stayed `New` for 120 s; block-to-block balance assertion could not run |
-| Soak setup stake | [0x12907ca8…6660d](https://explorer.altmempool.wtf/tx/0x12907ca88e35a4e9a7205e027289d63d300f2d4d1d56c06e2af6f31104b6660d) | Admitted, stayed `New` for 120 s; no soak round ran |
+| Bot-first race | [0x4d2b299f…da8b5](https://explorer.altmempool.wtf/tx/0x4d2b299f4c0f0049005137aefb407988fe8f2ff61948431d10086440c45da8b5) | `Cancelled`, no receipt, account ETH unchanged. Nov 6 recheck: still no receipt; the explorer no longer returns the entry (`Frame transaction not found`) |
+| Sponsored swap | [0xc8831ad1…c6872](https://explorer.altmempool.wtf/tx/0xc8831ad160bc1979381d2a7f160ef92070c0998237a565a7e6fecff5a21c6872) | Admitted with successful frame simulation; not mined within 120 s, later replaced by another same-nonce submission. Nov 6 recheck: no receipt; explorer answers `Frame transaction not found` |
+| Sponsored retry | [0x5fd5af51…6c0a5](https://explorer.altmempool.wtf/tx/0x5fd5af51dea748a0b3b665c41b07a96a7e64b03ae006ed3768163cf5f206c0a5) | Admitted, remained `New` for 120 s, later `Cancelled`. Nov 6 recheck: no receipt; explorer answers `Frame transaction not found` |
+| P256 retry with correct nonce | [0x84746cac…3c49f](https://explorer.altmempool.wtf/tx/0x84746cac988e39f8bff877e587a9de847405d4c02ca86586c899a5832863c49f) | Admitted, stayed `New` for 120 s. **Later mined:** `OnChain`, status 1, block 407,700 |
+| Intent fill retry | [0x877b80cd…67a15](https://explorer.altmempool.wtf/tx/0x877b80cdafb630f107638819f862a570f5452b1c08a4d3cb4e088e05ed167a15) | Admitted, five simulated frames successful, stayed `New` for 120 s. **Later mined reverted:** block 407,708, status 0; frame 3 (filler `fill`) reverted, frame 4 (settle) skipped; the filler (payer `0x26a52908…2a53`) paid the gas |
+| Underpay retry | [0x13f15852…87cde](https://explorer.altmempool.wtf/tx/0x13f158526206a10d702052b9244b558d4479c16f571912a91b8253f865087cde) | Admitted, settlement frame simulated as reverted, stayed `New` for 120 s; block-to-block balance assertion could not run. **Later mined reverted:** block 407,708, status 0, but frame 3 (`fill`) reverted, not the settle frame (skipped); filler paid the gas |
+| Soak setup stake | [0x12907ca8…6660d](https://explorer.altmempool.wtf/tx/0x12907ca88e35a4e9a7205e027289d63d300f2d4d1d56c06e2af6f31104b6660d) | Admitted, stayed `New` for 120 s; no soak round ran. **Later mined:** `OnChain`, block 407,703 |
 
 ## Live app runs (Nov 6 2026, deployed app + hosted bot)
 
@@ -60,7 +76,9 @@ The full test command creates fresh accounts on each run. Set `KABUTO_REUSE_FIXT
 ## Known limits
 
 - Chain testing is on devnet 1337 only. The public faucet was empty at first; an external test-role top-up permitted the funded run.
-- After the bot-first race, multiple independently signed transactions, including a fresh P256 account and a fresh soak account, passed admission and simulation but stayed `New` without receipts for at least 120 seconds. This prevented the sponsored, P256, intent-fill, underpay, and soak completion assertions. Raising the P256 fee to 10 gwei did not change that result. The gateway and chain still answered reads and produced blocks.
+- The devnet stopped producing blocks at block 408,262 (2026-11-05 22:58:46 UTC) and was still stopped at 04:35 UTC on Nov 6, so no fresh live run exists after that time.
+- Old devnet state is pruned: `eth_call` at blocks such as 405,072 and 408,092 now fails with `state root missing`, so historical balance checks and revert-data replays can no longer be repeated against the public RPC.
+- After the bot-first race, multiple independently signed transactions, including a fresh P256 account and a fresh soak account, passed admission and simulation but stayed `New` without receipts for at least 120 seconds. This prevented the sponsored, P256, intent-fill, underpay, and soak completion assertions. Raising the P256 fee to 10 gwei did not change that result. The gateway and chain still answered reads and produced blocks. Several of them were included later (blocks 407,700-407,708, see the table above): the P256 retry and the soak stake landed, and the intent-fill and underpay retries mined as reverted at the filler's `fill` frame. The suite had stopped waiting by then, so those assertions remain unrecorded.
 - The paymaster in `deployments/1337.json` (`0x2b594f59…afdf9`) is the redeployment that includes the PoolKey and approval validation fix (commit `b292fcd`). The e2e run above predates it; the fix itself is covered by the Foundry regressions.
 - Reputation effects for accounts with many `Cancelled` transactions remain untested at scale.
 - The Foundry opcode helpers model frame metadata; only the live suite exercises actual frame transaction admission and settlement semantics.
