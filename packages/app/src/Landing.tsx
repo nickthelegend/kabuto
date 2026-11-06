@@ -137,7 +137,7 @@ export function Landing() {
         </div>
         <div className="ln-hero-shade" aria-hidden />
         <div className="ln-hero-copy">
-          <span className="ln-eyebrow"><i />Live on the EIP-8141 devnet · Uniswap v4{live ? ` · block ${live.block.toLocaleString("en-US")}` : ""}</span>
+          <span className="ln-eyebrow"><i />Live on the EIP-8141 devnet<span className="ln-hide-sm"> · Uniswap v4</span>{live ? ` · block ${live.block.toLocaleString("en-US")}` : ""}</span>
           <h1 className="ln-h1">{words("Swap at your price.")}<br /><em>{words("Or not at all.")}</em></h1>
           <div className="ln-ctas"><a className="ln-btn g" href="#/app">Launch app</a><a className="ln-btn l" href="#check">Were you sandwiched?</a></div>
         </div>

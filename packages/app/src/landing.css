@@ -133,6 +133,7 @@
 
 @media (max-width: 899px) {
   .ln-links { display: none; }
+  .ln-hide-sm { display: none; }
   .ln-nav { grid-template-columns: 1fr auto; padding: 0 16px; height: 68px; }
   .ln-wrap, .ln-steps-h { padding: 0 16px; }
   .ln-hero { padding: 120px 16px 56px; min-height: auto; }
@@ -186,7 +187,7 @@
 .ln-chk-hint { min-height: 40px; margin-top: 12px; font-size: 14px; line-height: 1.45; color: var(--faint); }
 .ln-chk-hint.bad { color: var(--shu-ink); }
 .ln-chk-ex { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.ln-chk-ex button { min-height: 36px; padding: 0 14px; border-radius: 99px; border: 1px solid var(--hair-2); background: transparent; color: var(--ink); font: 600 13px/1 var(--sans); cursor: pointer; transition: border-color .15s, color .15s; }
+.ln-chk-ex button { min-height: 44px; padding: 0 14px; border-radius: 99px; border: 1px solid var(--hair-2); background: transparent; color: var(--ink); font: 600 13px/1 var(--sans); cursor: pointer; transition: border-color .15s, color .15s; }
 .ln-chk-ex button:hover:not(:disabled) { border-color: var(--shu); color: var(--shu-ink); }
 .ln-chk-out { margin-top: 8px; }
 .ln-chk-idle { padding: 20px; border-radius: 20px; border: 1px dashed var(--hair-2); }
@@ -238,7 +239,7 @@
 .ln-rows .pill.clean { background: var(--ok-wash); color: var(--ok); }
 .ln-rows .m { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin-top: 8px; font: 400 13px/1.3 var(--mono); color: var(--ink); }
 .ln-rows .m small { margin-right: 6px; font-size: 10px; letter-spacing: .08em; color: var(--faint); }
-.ln-rows .m .ln-link { margin-left: auto; min-height: 32px; }
+.ln-rows .m .ln-link { margin-left: auto; min-height: 44px; margin-block: -10px; }
 @keyframes ln-in { from { opacity: 0; transform: translateY(8px); } }
 @keyframes ln-spin { to { transform: rotate(360deg); } }
 
