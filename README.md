@@ -420,7 +420,7 @@ The DEX's Connect wallet creates a devnet-only P256 key in your browser, funds a
 
 - **Claude (Anthropic, via Claude Code)** and **OpenAI Codex** helped write and review the contracts, SDK, relay, filler, bot, app, tests and these docs, including the Arkiv integration.
 - **ChatGPT image generation** made the still artwork in `assets/generated/` and **Gemini** animated two of the stills into the landing videos (see those commits).
-- A human ran the live demos, checked every on-chain claim against the devnet explorer and Rabdi, and is responsible for the code and claims.
+- The live app runs were recorded with Playwright scripts (`packages/demo`) against the deployed app. Every on-chain claim was checked against the devnet explorer and Rabdi; the team is responsible for all code and claims.
 
 ## License
 
