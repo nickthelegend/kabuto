@@ -1,19 +1,20 @@
 # Uniswap developer feedback (Kabuto, ETHGlobal Mumbai 2026)
 
-Kabuto builds unsandwichable swaps and open intents on Uniswap v4, on the Ethereum Foundation's EIP-8141 frame-transaction devnet (chain 1337), where v4-core, the Quoter, StateView, the PositionManager, the Universal Router and Permit2 are predeployed from real mainnet bytecode.
+Kabuto builds unsandwichable swaps and open intents on Uniswap v4, on the Ethereum Foundation's EIP-8141 frame-transaction devnet (chain 1337), where the v4 PoolManager, V4 Quoter, StateView and Permit2 are predeployed (we used the first three; addresses in [`deployments/1337.json`](deployments/1337.json) and the README).
 
 ## What we used
 
-- **PoolManager** (`0x6bF9…9848` on the devnet): `initialize`, `unlock` + `IUnlockCallback`, `swap`, `modifyLiquidity`, `sync`/`settle`/`take` in our own minimal router (`packages/contracts/src/KabutoRouter.sol`) and in the reference filler (`packages/contracts/src/KabutoFiller.sol`).
-- **StateLibrary / `extsload`**: `KabutoAccount.verifyPrice` (`packages/contracts/src/KabutoAccount.sol`) and `KabutoPaymaster.sponsor` read `slot0` straight from the PoolManager inside a transaction's VERIFY frame. This is the core of the project: the price check has to run during validation, before execution, and `extsload` made that a single storage read.
+- **PoolManager** (`0x6bF9…9848` on the devnet): `initialize`, `unlock` + `IUnlockCallback`, `swap`, `modifyLiquidity`, `sync`/`settle`/`take` in our own minimal router ([`KabutoRouter.sol:48-113`](packages/contracts/src/KabutoRouter.sol#L48)) and in the reference filler ([`KabutoFiller.sol:50-77`](packages/contracts/src/KabutoFiller.sol#L50)).
+- **Hooks**: `KabutoGuardHook.beforeSwap` ([`KabutoGuardHook.sol:59`](packages/contracts/src/KabutoGuardHook.sol#L59)), deployed at a CREATE2-mined BEFORE_SWAP address with its own WETH/kUSD pool.
+- **StateLibrary / `extsload`**: `KabutoAccount.verifyPrice` (`packages/contracts/src/KabutoAccount.sol`) and `KabutoPaymaster.sponsor` read `slot0` straight from the PoolManager inside a transaction's VERIFY frame ([`KabutoAccount.sol:179`](packages/contracts/src/KabutoAccount.sol#L179), [`KabutoPaymaster.sol:125`](packages/contracts/src/KabutoPaymaster.sol#L125)). This is the core of the project: the price check has to run during validation, before execution, and `extsload` made that a single storage read.
 - **V4 Quoter** (`quoteExactInputSingle`): the DEX's quotes, the intent minimums, and the filler's profitability check.
 - **StateView** (`getSlot0`): live pool price in the UI and scripts.
 
 ## What worked well
 
-- `extsload` + `StateLibrary.getSlot0` is the right primitive for "validate against the pool without executing anything". It is cheap (one SLOAD-equivalent), deterministic, and needs no hook. We pinned a price band in a VERIFY frame under a 100k validation-gas cap with room to spare.
-- The flash-accounting model (`unlock` → `swap` → `sync`/`settle`/`take`) made a 120-line router and a filler that swaps tokens it received earlier in the same transaction straightforward.
-- Having real v4 bytecode on a research devnet meant we never had to mock Uniswap.
+- `extsload` + `StateLibrary.getSlot0` is the right primitive for "validate against the pool without executing anything". It is a single storage read, deterministic, and needs no hook. A price pin in a VERIFY frame fits under the devnet's 100k validation-gas cap; the same cap also fits our full intent shape check.
+- The flash-accounting model (`unlock` → `swap` → `sync`/`settle`/`take`) made a 115-line router and a filler that swaps tokens it received earlier in the same transaction straightforward.
+- Having v4 predeployed on a research devnet meant we never had to mock Uniswap on chain; our Foundry tests deploy a PoolManager compiled from `v4-core` instead of a mock.
 
 ## Friction
 
@@ -32,3 +33,14 @@ Kabuto builds unsandwichable swaps and open intents on Uniswap v4, on the Ethere
 
 - Hooks have `beforeSwap`; frame transactions add a step **before the transaction exists**. A guide on using `extsload` from account-abstraction validation (EIP-8141 VERIFY frames, ERC-4337 `validateUserOp` with staked entities) would open a new class of "validate against Uniswap state, pay nothing on failure" integrations.
 - Official v4 deployments on frame-transaction devnets (as on this one) as Hegotá approaches.
+
+## Uniswap Developer Feedback Form: paste-ready answers
+
+Link to paste into the form: https://github.com/nickthelegend/kabuto/blob/main/FEEDBACK.md
+
+- **Project:** Kabuto (ETHGlobal Mumbai 2026), https://github.com/nickthelegend/kabuto, live at https://kabuto-self.vercel.app.
+- **What we built with Uniswap:** swaps that are only valid at the price you signed. A frame transaction's VERIFY frame reads the v4 pool's `slot0` with `extsload`; if a sandwich bot moves the price first, the swap is dropped before inclusion and costs nothing. Plus open intents filled through v4, a minimal v4 router and filler, and KabutoGuard, a `beforeSwap` hook that only admits price-pinned frame transactions.
+- **Uniswap products used:** v4-core PoolManager (unlock, swap, modifyLiquidity, sync/settle/take, extsload via StateLibrary), hooks (beforeSwap), V4 Quoter, StateView. Not used: Uniswap API, Universal Router, v4-periphery PositionManager, CCA.
+- **What worked well:** `extsload` + `StateLibrary.getSlot0` for validation-time reads; flash accounting for a short router and for a filler that swaps tokens it received earlier in the same transaction.
+- **Biggest friction:** no minimal audited exact-in router for non-hook integrations; wrapped hook errors (`WrappedError`) that viem's gas estimate couldn't decode; no small canonical hook-address miner; the Quoter is `nonpayable` and must be called with `eth_call` / `simulateContract`.
+- **Docs we wished existed:** a storage-layout page for integrators (`POOLS_SLOT`, `Slot0` packing); a `sqrtPriceBand(sqrtPriceX96, bps)` helper; a guide to reading v4 state from account-abstraction validation (EIP-8141 VERIFY, ERC-4337 `validateUserOp` with staked entities).
