@@ -5,7 +5,7 @@
  */
 import { pad, type Hex } from "viem";
 import { BAND, MANAGER, SWAP_TOPIC, findSandwich, measure, priceBeforeInBlock, swapsFromLogs, TX_HASH, ADDRESS, type RawLog, type Tx } from "../landing/detect";
-import { call, getLogs, lastLogBefore } from "../landing/rpc";
+import { call, ENDPOINTS, getLogs, lastLogBefore, lookup, type Endpoint } from "../landing/rpc";
 
 export { BAND, MANAGER };
 /** How far back the pre-attack price is looked up when the front-run is the pool's first swap in its block. */
@@ -29,7 +29,7 @@ function txFetcher(signal?: AbortSignal) {
   return (h: Hex) => {
     let p = cache.get(h);
     if (!p) {
-      p = call<Tx | null>("eth_getTransactionByHash", [h], signal).then((t) => { if (!t) throw new Error(`Transaction ${h} not returned by the RPC`); return t; });
+      p = lookup<Tx>("eth_getTransactionByHash", [h], signal).then((t) => { if (!t) throw new Error(`No RPC returned transaction ${h}, although its swap log exists`); return t; });
       cache.set(h, p);
     }
     return p;
@@ -59,12 +59,13 @@ async function judge(h: Hex, block: number, blockLogs: RawLog[], getTx: (h: Hex)
   return { kind: "clean", hash: h, block, pools: pools.length, swapsInBlock: all.length };
 }
 
-export async function checkMainnetTx(hash: string, opts: { signal?: AbortSignal; progress?: Progress } = {}): Promise<Verdict> {
-  const { signal, progress } = opts;
+/** `endpoints` reorders the receipt lookup (tests use it to put a pruned node first). "not-found" only when every endpoint answered null. */
+export async function checkMainnetTx(hash: string, opts: { signal?: AbortSignal; progress?: Progress; endpoints?: Endpoint[] } = {}): Promise<Verdict> {
+  const { signal, progress, endpoints = ENDPOINTS } = opts;
   const h = lower(hash.trim());
   if (!TX_HASH.test(h)) throw new Error("That isn't a transaction hash. Paste the 66-character 0x… hash from Etherscan or your wallet.");
   progress?.("Reading the transaction receipt");
-  const receipt = await call<{ blockNumber: Hex; status: Hex; logs: RawLog[] } | null>("eth_getTransactionReceipt", [h], signal);
+  const receipt = await lookup<{ blockNumber: Hex; status: Hex; logs: RawLog[] }>("eth_getTransactionReceipt", [h], signal, endpoints);
   if (!receipt) return { kind: "not-found", hash: h };
   const block = Number(BigInt(receipt.blockNumber));
   if (receipt.status === "0x0") return { kind: "failed-tx", hash: h, block };

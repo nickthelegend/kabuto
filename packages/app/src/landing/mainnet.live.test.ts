@@ -1,6 +1,7 @@
 // Live, read-only: the real checker pipeline against Ethereum mainnet public RPCs. No mocks; fails if every RPC fails.
 import { describe, expect, it } from "vitest";
 import { checkMainnetTx, EXAMPLES, scanAddress, SCAN_BLOCKS, SCAN_MAX_TXS } from "../lib/mainnet";
+import { ENDPOINTS, lookup } from "./rpc";
 
 describe("mainnet checker (live)", () => {
   it("reproduces the replay's verdict for the ≈$415 example victim", async () => {
@@ -14,6 +15,19 @@ describe("mainnet checker (live)", () => {
     expect(v.stoppedByPin).toBe(true);
     expect(v.victimFrom).toBe("0x192acbd4e6331b06a500729cb68882214ef4a234");
   }, 120_000);
+
+  it("judges all three built-in example victims as sandwiched", async () => {
+    for (const e of EXAMPLES) expect((await checkMainnetTx(e.hash)).kind, e.label).toBe("sandwiched");
+  }, 180_000);
+
+  it("falls back past a pruned node: PublicNode answers null for an old receipt, the next endpoint has it", async () => {
+    const old = "0x2c3d2f3f51dc4248a285fe13f9534c72f542385a9613aa221435caf9e5570485"; // block 26,299,987
+    const pruned = ENDPOINTS.find((e) => e.name === "PublicNode")!;
+    expect(await lookup("eth_getTransactionReceipt", [old], undefined, [pruned])).toBeNull();
+    const order = [pruned, ...ENDPOINTS.filter((e) => e !== pruned)];
+    expect(await lookup("eth_getTransactionReceipt", [old], undefined, order)).not.toBeNull();
+    expect((await checkMainnetTx(old, { endpoints: order })).kind).toBe("sandwiched");
+  }, 180_000);
 
   it("says not-found for a hash that was never mined", async () => {
     expect((await checkMainnetTx(`0x${"ab".repeat(32)}`)).kind).toBe("not-found");

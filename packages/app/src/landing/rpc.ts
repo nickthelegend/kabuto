@@ -51,21 +51,44 @@ async function post<T>(ep: Endpoint, method: string, params: unknown[], signal?:
 
 const preferred = new Map<string, number>();
 /** One call, trying each endpoint in turn (starting with the last one that worked for this method). */
-export async function call<T>(method: string, params: unknown[], signal?: AbortSignal, eligible: (e: Endpoint) => boolean = () => true): Promise<T> {
-  const list = ENDPOINTS.filter(eligible);
-  const start = Math.min(preferred.get(method) ?? 0, list.length - 1);
+export async function call<T>(method: string, params: unknown[], signal?: AbortSignal, endpoints: Endpoint[] = ENDPOINTS): Promise<T> {
+  const list = endpoints;
+  const start = endpoints === ENDPOINTS ? Math.min(preferred.get(method) ?? 0, list.length - 1) : 0;
   const failures: { name: string; reason: string }[] = [];
   for (let i = 0; i < list.length; i++) {
     const ep = list[(start + i) % list.length];
     try {
       const out = await post<T>(ep, method, params, signal);
-      preferred.set(method, (start + i) % list.length);
+      if (endpoints === ENDPOINTS) preferred.set(method, (start + i) % list.length);
       return out;
     } catch (e) {
       if (isAbort(e)) throw e;
       failures.push({ name: ep.name, reason: e instanceof Error ? e.message : String(e) });
     }
   }
+  throw new RpcError(method, failures);
+}
+
+/**
+ * A lookup that may legitimately return null (receipt, transaction). Pruned nodes (PublicNode drops old receipts)
+ * also answer null, so null means "try the next endpoint". Returns null only when EVERY endpoint answered null; if
+ * any endpoint failed instead, it throws, because "not found" can't be confirmed.
+ */
+export async function lookup<T>(method: string, params: unknown[], signal?: AbortSignal, endpoints: Endpoint[] = ENDPOINTS): Promise<T | null> {
+  const failures: { name: string; reason: string }[] = [];
+  let nulls = 0;
+  for (const ep of endpoints) {
+    try {
+      const out = await post<T | null>(ep, method, params, signal);
+      if (out !== null && out !== undefined) return out;
+      nulls++;
+      failures.push({ name: ep.name, reason: "answered null (not found, or pruned history)" });
+    } catch (e) {
+      if (isAbort(e)) throw e;
+      failures.push({ name: ep.name, reason: e instanceof Error ? e.message : String(e) });
+    }
+  }
+  if (nulls === endpoints.length) return null;
   throw new RpcError(method, failures);
 }
 
