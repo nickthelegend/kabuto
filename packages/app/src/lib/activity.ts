@@ -22,7 +22,7 @@ export type Activity = {
   /** Block time in ms (the gateway includes blockTimestamp in logs). */
   time?: number;
   who: "kabuto" | "normal";
-  kind: "swap" | "fill";
+  kind: "swap" | "sponsored" | "paymaster";
   paid: { symbol: string; decimals: number; amount: bigint };
   got: { symbol: string; decimals: number; amount: bigint };
   route?: Route | "other";
@@ -77,7 +77,11 @@ export async function readActivity(account: Address | undefined, funder: Address
       const pool = swap?.topics?.[1]?.toLowerCase();
       r.route = pool === D.poolId.toLowerCase() ? "main" : GUARD && pool === GUARD.id.toLowerCase() ? "guard" : swap ? "other" : undefined;
       r.frames = rc.frameReceipts?.length;
-      if (rc.payer && rc.from && rc.payer.toLowerCase() !== rc.from.toLowerCase()) { r.kind = "fill"; r.payer = rc.payer; }
+      if (rc.payer && rc.from && rc.payer.toLowerCase() !== rc.from.toLowerCase()) {
+        r.payer = rc.payer;
+        // a third party paid the gas: the Kabuto paymaster (gas charged in tokens) or another payer such as an intent filler
+        r.kind = rc.payer.toLowerCase() === String((D as any).paymaster ?? "").toLowerCase() ? "paymaster" : "sponsored";
+      }
     } catch { /* receipt is an extra; the row still stands on its logs */ }
   }));
   return top;
