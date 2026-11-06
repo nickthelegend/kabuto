@@ -2,8 +2,11 @@
 
 TypeScript client for Kabuto protected swaps, sponsored swaps, and open intents on the public EIP-8141 devnet. Works in browsers and Node. **Devnet only until EIP-8141 ships (Hegotá).** Chain ID 1337; test tokens and ETH have no mainnet value.
 
+Not published to npm yet. Use it from this monorepo as a workspace dependency (the filler does: `"@kabuto/sdk": "workspace:*"`):
+
 ```sh
-npm install @kabuto/sdk
+pnpm install
+pnpm --dir packages/sdk test
 ```
 
 The package is ESM and includes TypeScript declarations. `createKabuto()` uses the addresses exported as `devnet1337`; pass `{ rpcUrl, deployment }` to use a compatible gateway and deployment. All amounts are raw token units (`bigint`). kUSD has 6 decimals and WETH has 18.

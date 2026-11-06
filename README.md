@@ -1,12 +1,86 @@
 # Kabuto
 
-**A DEX where a sandwiched swap stops existing.** Kabuto puts the Uniswap v4 price check inside the transaction's own EIP-8141 VERIFY frame. If a bot moves the price, your swap is never included and costs nothing. Or sign only an intent and let anyone fill it through Uniswap v4 and pay the gas.
+**A DEX where a sandwiched swap stops existing.** A sandwich bot needs your swap to stay valid after it has moved the price. Kabuto puts the Uniswap v4 price check inside the transaction's own EIP-8141 VERIFY frame, so if a bot moves the price, your swap is no longer a valid transaction: it is never included and costs you nothing. Or skip routing: sign an intent (no gas), and any filler can complete it through Uniswap v4 and pay the gas, while your account refuses any fill that breaks the signed shape. Kabuto ships as a DEX, an SDK (`@kabuto/sdk`), an open filler network with its intent board on Arkiv, and KabutoGuard, a Uniswap v4 hook that only lets price-pinned frame transactions trade.
 
-**Live app:** https://kabuto-self.vercel.app · **Chain:** Ethereum Foundation EIP-8141 / ERC-8421 alt-mempool devnet (chain 1337) · **Explorer:** https://explorer.altmempool.wtf · **License:** MIT
+**Live app:** https://kabuto-self.vercel.app · **Chain:** Ethereum Foundation EIP-8141 / ERC-8421 alt-mempool devnet (chain 1337) · **Explorer:** https://explorer.altmempool.wtf · **Intent board:** Arkiv Rabdi testnet · **License:** MIT
 
 ![Kabuto landing](docs/img/landing-hero.png)
 
-> **Scope, stated up front.** EIP-8141 (frame transactions) is not on Ethereum mainnet or Sepolia; it is proposed for the Hegotá upgrade. Kabuto runs on the EF's public frame-transaction devnet, where Uniswap v4's real PoolManager, Quoter and StateView are predeployed. The mainnet numbers below come from a read-only replay of real mainnet blocks, not from Kabuto running on mainnet.
+> **Scope, stated up front.** EIP-8141 (frame transactions) is not on Ethereum mainnet or Sepolia; it is proposed for the Hegotá upgrade. Kabuto runs on the EF's public frame-transaction devnet, where Uniswap v4's PoolManager, V4 Quoter and StateView are predeployed. The mainnet numbers below come from a read-only replay of real mainnet blocks, and the mainnet checker only reads; Kabuto sends no mainnet transactions.
+
+---
+
+## The 60-second version
+
+### Three live proofs (open them)
+
+| # | What you'll see | Transaction |
+|---|---|---|
+| 1 | **The problem, live.** An ordinary 1,500 kUSD swap with 2% slippage is sandwiched by our bot: front-run, victim, back-run at indices 0, 1, 2 of block 407,046. The victim got 0.04543 WETH against a 0.04626 quote (1.80% worse, 27.04 kUSD). | victim [`0xbf074d56…de29`](https://explorer.altmempool.wtf/tx/0xbf074d561e3ed81a19eb3c4eea24efa7e6d8ec48511543fd318682d72afbde29) |
+| 2 | **The fix, live.** The same swap with protection on (±0.5% pin). The same bot front-ran it in block 407,052; the alt-mempool re-ran the VERIFY frame, it reverted with `PriceOutOfBand` (`0x8ad5a9c0`), and the swap was dropped: status `Cancelled`, no receipt, 0 gas. | [`0x2e8b5b7c…2e92`](https://explorer.altmempool.wtf/tx/0x2e8b5b7ca0801c1ba0931593d33f099a19a0189ed057d775b74b9d88cf7b2e92) |
+| 3 | **A pool that can't be sandwiched.** In the KabutoGuard v4 pool, a price-pinned frame transaction swaps; a plain legacy transaction (what a sandwich bot sends) through the same router reverts with `NotFrameTx()` (`0x2e55cc19`). | pinned [`0xd1962486…f861`](https://explorer.altmempool.wtf/tx/0xd1962486165f1c4afdf3aec80ad6f2c6f882063403ad81e8469165e68472f861) · plain [`0x8fd351e2…1829`](https://explorer.altmempool.wtf/tx/0x8fd351e2cffefc53e3680916bdb4007f24cbbc9b601ae37b13a80287e3291829) |
+
+Also live: an intent filled by a third-party filler that paid the gas ([`0xdfd70b01…c065`](https://explorer.altmempool.wtf/tx/0xdfd70b014486b1d92669271318502d159570de709be0dbb2a99682da49b8c065)), its Arkiv fill record ([`0xd9cc8020…4e5f`](https://rabdi.explorer.arkiv.network/entity/0xd9cc8020d93d9bdae3052f914a1770613cc2c4958edaf72cf0621cca76fd4e5f)), and a "Were you sandwiched?" checker on the landing page that reads real Ethereum mainnet.
+
+### How it fits together
+
+```mermaid
+flowchart LR
+  U["Kabuto DEX / @kabuto/sdk<br/>(P256 key in the browser)"]
+  R["Intent relay<br/>(untrusted)"]
+  AK[("Arkiv Rabdi<br/>intent board + fill log")]
+  F["Fillers<br/>(anyone)"]
+  M["ERC-8421 alt-mempool<br/>chain 1337"]
+  A["KabutoAccount<br/>VERIFY: verifyPrice / verifyIntent"]
+  G["KabutoGuard hook<br/>beforeSwap reads the frame tx"]
+  V4["Uniswap v4 PoolManager"]
+  B["Sandwich bot<br/>(real, hosted)"]
+  U -- "protected swap (frame tx)" --> M
+  U -- "signed intent, no gas" --> R
+  R -- "mirror, expires at deadline" --> AK
+  AK -- "open intents" --> F
+  AK -- "Intents tab" --> U
+  F -- "fill tx, filler pays gas" --> M
+  M --> A
+  A -- "extsload slot0 in VERIFY" --> V4
+  A -- "swap in SENDER frames" --> V4
+  V4 -- "beforeSwap" --> G
+  B -- "front-runs, back-runs" --> V4
+```
+
+### Run it
+
+```sh
+pnpm install
+forge test --root packages/contracts        # 19 tests (10 core + 9 KabutoGuard)
+pnpm --dir packages/app dev                 # the DEX on :5180, against the public devnet
+pnpm --dir packages/bot watch               # read-only view of the hosted sandwich bot
+```
+
+Full backend (relay, filler, bot, faucet): `docker compose up -d --build`, or see [Run it](#run-it-1) below.
+
+### Limits (full list in [Known limits](#known-limits-honest-list))
+
+- Devnet only: EIP-8141 is not on any public network yet. kUSD is a devnet test token; the WETH/kUSD pool is thin and its price has drifted away from real ETH.
+- Of the live e2e suite's last full run, 6 cases passed and 4 timed out waiting for inclusion while the public devnet stalled ([TESTING.md](TESTING.md)).
+- How ERC-8421 reputation should score swaps that are cancelled by price movement is an open question ([EF-FINDINGS.md](EF-FINDINGS.md)).
+
+---
+
+## For judges: prize requirements → evidence
+
+| Prize | Stated requirement | Where it is |
+|---|---|---|
+| **EF: Best Use of the Frame Transaction Alternative Mempool** | Real alt-mempool usage (an admitted devnet tx, or code that submits one) | Admitted and mined: [`0x45345cfa…`](https://explorer.altmempool.wtf/tx/0x45345cfa137774ca97c8a1b8e3d58f51b19940a4db3ef765ea9680f135a1e08a), [`0xdfd70b01…`](https://explorer.altmempool.wtf/tx/0xdfd70b014486b1d92669271318502d159570de709be0dbb2a99682da49b8c065), [`0xd1962486…`](https://explorer.altmempool.wtf/tx/0xd1962486165f1c4afdf3aec80ad6f2c6f882063403ad81e8469165e68472f861); admitted then cancelled: [`0x2e8b5b7c…`](https://explorer.altmempool.wtf/tx/0x2e8b5b7ca0801c1ba0931593d33f099a19a0189ed057d775b74b9d88cf7b2e92). Submitting code: [`packages/sdk/src/index.ts`](packages/sdk/src/index.ts) (`protectedSwap`, `submitFill`) |
+| | Explain the design, code and trade-offs | [Architecture](#architecture), [Design trade-offs](#design-trade-offs), [EF-FINDINGS.md](EF-FINDINGS.md) (what we verified on the devnet and what broke) |
+| **Uniswap: Build with Uniswap** | Public repo, open source | this repo, MIT |
+| | FEEDBACK.md + the Uniswap Developer Feedback Form linked to it | [FEEDBACK.md](FEEDBACK.md) (form answers at the end of that file) |
+| | README points to the relevant contracts and code lines | [Uniswap v4 code pointers](#uniswap-v4-code-pointers) |
+| **Arkiv: Build on Arkiv (from scratch)** | Built at the event | first commit 2026-11-05 21:44 IST, after hacking opened at 21:00 IST |
+| | Writes to Arkiv testnet; a user-facing feature reads it | relay writer [`packages/filler/src/arkiv.ts`](packages/filler/src/arkiv.ts); the DEX's Intents tab reads Rabdi every 4 s ([`packages/app/src/lib/arkiv.ts`](packages/app/src/lib/arkiv.ts)) |
+| | README: writer wallet + a query judges can run | [Arkiv intent board](#arkiv-intent-board-rabdi-testnet) |
+| | `arkiv/schema.md`, friction feedback, one file per criterion | [schema](arkiv/schema.md), [friction](arkiv/friction.md), [reach](arkiv/reach.md), [why Arkiv](arkiv/why-arkiv.md), [how we use Arkiv](arkiv/how-you-use-arkiv.md) |
+| | Open-source license, AI disclosure | [LICENSE](LICENSE) (MIT); [AI usage](#ai-usage) |
 
 ---
 
@@ -17,7 +91,7 @@
 | Mode | What happened on chain | Tx |
 |---|---|---|
 | **Protection off** (ordinary wallet, 2% slippage) | Bot front-run, victim and back-run at **indices 0, 1, 2 of block 407,046**. The victim received 0.04543 WETH against a 0.04626 WETH quote: **1.80% worse, 27.04 kUSD lost.** | victim [`0xbf074d56…de29`](https://explorer.altmempool.wtf/tx/0xbf074d561e3ed81a19eb3c4eea24efa7e6d8ec48511543fd318682d72afbde29), front [`0xa33875b5…4e18`](https://explorer.altmempool.wtf/tx/0xa33875b5dcd12802e25c92150f8b87284b766f945e49a5ca589a6a6975784e18), back [`0xba51ab55…b3d2`](https://explorer.altmempool.wtf/tx/0xba51ab5570bcd69b298bd7efad26002dc3b23c591bcdfdf3bc0b616699b8b3d2) |
-| **Protection on** (Kabuto account, ±0.5% pin) | The same bot front-ran it (block 407,052, index 0). The front-run pushed the price out of the pinned band, so the swap's VERIFY frame failed: **explorer status `Cancelled`, no receipt, 0 gas.** The bot was left holding its front-run. | victim [`0x2e8b5b7c…2e92`](https://explorer.altmempool.wtf/tx/0x2e8b5b7ca0801c1ba0931593d33f099a19a0189ed057d775b74b9d88cf7b2e92), front [`0xd368dd0c…bc3c`](https://explorer.altmempool.wtf/tx/0xd368dd0c3dae6f660d415967e1d6d19004a85400c32f4c3d52f034c62dbfbc3c) |
+| **Protection on** (Kabuto account, ±0.5% pin) | The same bot front-ran it (block 407,052, index 0). The front-run pushed the price out of the pinned band, so the alt-mempool's revalidation of the VERIFY frame failed (`PriceOutOfBand`): **dropped with status `Cancelled`, no receipt, 0 gas.** The bot was left holding its front-run. | victim [`0x2e8b5b7c…2e92`](https://explorer.altmempool.wtf/tx/0x2e8b5b7ca0801c1ba0931593d33f099a19a0189ed057d775b74b9d88cf7b2e92), front [`0xd368dd0c…bc3c`](https://explorer.altmempool.wtf/tx/0xd368dd0c3dae6f660d415967e1d6d19004a85400c32f4c3d52f034c62dbfbc3c) |
 | **Intent** (300 kUSD → WETH) | Signed off-chain (0 gas), posted to the open relay. A third-party filler built the frame transaction, routed it through Uniswap v4 and paid the gas. The account received 0.00886 WETH (signed minimum 0.00885). | [`0xdfd70b01…c065`](https://explorer.altmempool.wtf/tx/0xdfd70b014486b1d92669271318502d159570de709be0dbb2a99682da49b8c065) |
 
 The "You saved" figure is computed from the swaps themselves (`kUSD paid × shortfall vs quote`), and only shown when the protected swap has the same size and direction as the sandwiched one.
@@ -160,6 +234,31 @@ The paymaster's VERIFY frame inspects the transaction with `TXPARAM`, `FRAMEPARA
 
 ---
 
+## Design trade-offs
+
+| Choice | Why | What it costs |
+|---|---|---|
+| Price check in a VERIFY frame instead of a `minAmountOut` | A moved price makes the transaction invalid, so a sandwich has nothing to sell into and the user pays no gas | VERIFY reads PoolManager storage, which the canonical mempool forbids, so the account must stake in the ERC-8421 registry and use the alternative mempool |
+| Cancel instead of revert | A cancelled transaction is free for the user and gives the bot nothing | ERC-8421 counts admitted-but-not-included transactions against a staked sender. A user who is attacked often could lose reputation; this is open (see [EF-FINDINGS.md](EF-FINDINGS.md)) |
+| Intents signed as an explicit 32-byte `msg` | The owner signs once, without knowing who fills or what the filler's frames look like | EIP-8141 warns that this approval covers every later SENDER frame, so `verifyIntent` must check every frame's mode, target, flags, value and calldata, which costs validation gas |
+| Everything inside the 100k validation-gas cap | Fits the devnet's `MAX_VERIFY_GAS`, so no special mempool budget is needed | The cap covers the whole validation prefix plus 2,800 gas per secp256k1 and 6,700 per P256 signature. For a P256 owner plus a filler co-signature and `pay()`, `verifyIntent` gets 78,500 gas ([`intentVerifyBudget`](packages/sdk/src/index.ts#L49)) |
+| Dutch decay enforced by the account, competition by same-nonce replacement | No settlement contract, no auction server: the alt-mempool keeps the highest fee | Fillers compete on fee, not on a sealed price; a filler sees the intent in public |
+| An untrusted relay mirrored to Arkiv | Intents carry their own signature, so anyone can host a relay or read the board | Readers must filter by the writer as owner and re-verify each signature on chain 1337 |
+| KabutoGuard trusts the sender's own VERIFY pin | The hook doesn't need to know the account's code | An account whose `verifyPrice` doesn't really check only fails to protect itself; it cannot weaken the pool for others |
+
+## Uniswap v4 code pointers
+
+| What | Code |
+|---|---|
+| Read the v4 pool price inside VERIFY (`StateLibrary.getSlot0` → `extsload`) | [`KabutoAccount.sol:178-180`](packages/contracts/src/KabutoAccount.sol#L178), called from `verifyPrice` at [:71](packages/contracts/src/KabutoAccount.sol#L71) |
+| The paymaster's price check against its own pool | [`KabutoPaymaster.sol:125`](packages/contracts/src/KabutoPaymaster.sol#L125), inside `sponsor` at [:80](packages/contracts/src/KabutoPaymaster.sol#L80) |
+| Router: `unlock` → `swap` → `sync`/`settle`/`take` | [`KabutoRouter.sol:48`](packages/contracts/src/KabutoRouter.sol#L48) `swapExactIn`, [:76](packages/contracts/src/KabutoRouter.sol#L76) `swap`, [:92](packages/contracts/src/KabutoRouter.sol#L92) `take`, [:109-113](packages/contracts/src/KabutoRouter.sol#L109) `_settle` |
+| Filler swaps tokens it received earlier in the same transaction | [`KabutoFiller.sol:52`](packages/contracts/src/KabutoFiller.sol#L52) `unlock`, [:62](packages/contracts/src/KabutoFiller.sol#L62) `swap`, [:74-77](packages/contracts/src/KabutoFiller.sol#L74) `sync`/`settle`/`take` |
+| KabutoGuard `beforeSwap`: finds an earlier successful VERIFY price pin by the sender | [`KabutoGuardHook.sol:59`](packages/contracts/src/KabutoGuardHook.sol#L59), frame scan [:79-84](packages/contracts/src/KabutoGuardHook.sol#L79), band limit [:97](packages/contracts/src/KabutoGuardHook.sol#L97) |
+| V4 Quoter (`quoteExactInputSingle`) and StateView (`getSlot0`) from the SDK | [`packages/sdk/src/index.ts:169`](packages/sdk/src/index.ts#L169), [:174](packages/sdk/src/index.ts#L174) |
+| Hook deployment (CREATE2-mined BEFORE_SWAP address, 200 bps max band) | [`packages/devnet/src/guard.ts:77`](packages/devnet/src/guard.ts#L77) |
+| Tests against a real v4 PoolManager (compiled from `v4-core`, stored in `test/PoolManager.creation.json`) | [`packages/contracts/test/Kabuto.t.sol`](packages/contracts/test/Kabuto.t.sol) (router and filler swaps), [`KabutoGuard.t.sol`](packages/contracts/test/KabutoGuard.t.sol) (9 hook tests) |
+
 ## Every claim, where it is enforced, and where it is proven
 
 | Claim | Enforced in | Tested in | On chain |
@@ -191,9 +290,10 @@ The landing page has a checker that runs on **real Ethereum mainnet**, in your b
 
 `packages/replay` scans Uniswap v4 PoolManager `Swap` logs on **Ethereum mainnet** (read-only), blocks 26,299,825–26,307,824 (27 hours), for front/victim/back triples whose front and back legs share a sender.
 
-- **497** unique victims sandwiched (503 same-sender triples).
-- **388 of 501** evaluated (77%) moved the price more than 0.5%, so a ±0.5% Kabuto pin would have made those victim swaps invalid.
-- No dollar figure: USD pricing covered about 1% of pools. Heuristic, false-positive and false-negative risks: [METHOD.md](packages/replay/METHOD.md).
+- **503** triples whose front and back legs share `tx.from`, covering **497** unique victim transactions.
+- **388 of 501** evaluated (77%) moved the price more than 0.5% before the victim, so a ±0.5% Kabuto pin would have made those victim swaps invalid.
+- How these are counted: `packages/replay/out/sandwiches.jsonl` (regenerated by `pnpm --dir packages/replay scan`, git-ignored), filtered to `attackerMatch == "from"`. The committed [`out/summary.json`](packages/replay/out/summary.json) uses the looser rule (front and back share `tx.from` or `tx.to`): 540 candidates, 419 of 538 evaluated (77.9%).
+- No dollar figure: USD pricing covered about 1% of candidates. Heuristic, false-positive and false-negative risks: [METHOD.md](packages/replay/METHOD.md).
 
 ## SDK
 
@@ -219,6 +319,7 @@ Full API: [packages/sdk/README.md](packages/sdk/README.md).
 | Foundry (`forge test --root packages/contracts`) | 19 tests, 0 failed (10 core + 9 KabutoGuard), 2 fuzz tests × 256 runs. Frame opcodes mocked at the `HegotaSupport` helper addresses; swaps against the real v4 PoolManager bytecode. Found two shape-check gaps, both fixed with regression tests and the paymaster redeployed. |
 | Live devnet e2e (`pnpm --dir packages/e2e test`) | Protected swap, bot-first race, out-of-band and three tampered fills refused, run against the public devnet. Some cases were admitted but timed out waiting for inclusion while the public devnet stalled (every hash and outcome in TESTING.md). |
 | Live app runs (this README's top table) | Ordinary swap sandwiched; protected swap cancelled at 0 gas; intent filled by a VPS filler. |
+| Arkiv (`pnpm --dir packages/filler exec vitest run test/arkiv.test.ts`) | 2 passed (byte round trip, live public Rabdi read), 1 skipped (live write; needs a funded writer key in the environment) |
 | Live sandwich bot (`packages/bot`) | Watches the public mempool and the alt-mempool, front-runs and back-runs real swaps, and records the realized loss vs the no-sandwich quote for every attempt. |
 
 ## Arkiv intent board (Rabdi testnet)
@@ -235,15 +336,32 @@ Open intents need a public place where any filler can find them. Kabuto's relay 
 
 A landed fill is written only after the devnet explorer confirms the transaction on chain (fill reports arrive on an open endpoint). `GET https://kabuto-relay.201-18-198-162.sslip.io/arkiv` shows the writer, its tGLM balance, the publication count and the last error.
 
-**Query judges can run** on Rabdi (`https://rpc.rabdi.db-chain.testnet.arkiv.network`, chain 7794095):
+**Queries judges can run** on Rabdi (`https://rpc.rabdi.db-chain.testnet.arkiv.network`, chain 7794095):
 
 ```text
-arkiv.schema = str('kabuto.intent.v1') AND status = str('open') AND chainId = u64(1337)
+arkiv.schema = str('kabuto.fill.v1') AND $owner = addr(0x8eD225Ae7f4b445Bfee6ad5dd9719C59426Af3aF)
 ```
 
-(open intents right now; drop the `status` clause to see filled ones, or query `arkiv.schema = str('kabuto.fill.v1')` for the fill log). Always filter by the writer as owner (`$owner`); anyone can write an entity with the same schema name.
+This is the fill log; fill entities live for 30 days, so it returns the landed fill above (checked Nov 6 2026: 1 row, expiring at Rabdi block 1,561,290). Open intents:
 
-Schema and judging notes: [`arkiv/schema.md`](arkiv/schema.md), [`arkiv/how-you-use-arkiv.md`](arkiv/how-you-use-arkiv.md), [`arkiv/why-arkiv.md`](arkiv/why-arkiv.md), [`arkiv/reach.md`](arkiv/reach.md), [`arkiv/friction.md`](arkiv/friction.md). AI assistance was used to implement and review the Arkiv integration and draft these notes; the authors remain responsible for the code and claims.
+```text
+arkiv.schema = str('kabuto.intent.v1') AND status = str('open') AND chainId = u64(1337) AND $owner = addr(0x8eD225Ae7f4b445Bfee6ad5dd9719C59426Af3aF)
+```
+
+Intent entities **expire at the intent's own deadline**, so this returns rows only while an intent is open; the first intent entity above has already expired, as designed (`getEntity` now reports "No live entity"). Post an intent in the app's Intents tab and it appears within seconds. Always filter by the writer as owner; anyone can write an entity with the same schema name.
+
+From Node with the SDK:
+
+```ts
+import { createPublicClient } from "@arkiv-network/sdk";
+import { rabdi } from "@arkiv-network/sdk/chains";
+import { http } from "viem";
+const c = createPublicClient({ chain: rabdi({ accessKey: "" }), transport: http() });
+console.log(await c.query("arkiv.schema = str('kabuto.fill.v1') AND $owner = addr(0x8eD225Ae7f4b445Bfee6ad5dd9719C59426Af3aF)",
+  { select: { $key: true, $attributes: true }, limit: 100 }));
+```
+
+Schema and judging notes: [`arkiv/schema.md`](arkiv/schema.md), [`arkiv/how-you-use-arkiv.md`](arkiv/how-you-use-arkiv.md), [`arkiv/why-arkiv.md`](arkiv/why-arkiv.md), [`arkiv/reach.md`](arkiv/reach.md), [`arkiv/friction.md`](arkiv/friction.md).
 
 ## Where it runs
 
@@ -297,6 +415,12 @@ pnpm --dir packages/app dev             # Kabuto DEX on :5180
 Or run the backend the way it is hosted: `docker compose up -d --build` (relay, filler, bot, faucet).
 
 The DEX's Connect wallet creates a devnet-only P256 key in your browser, funds an ordinary EOA from the devnet faucet (or the Kabuto fallback faucet), deploys and stakes your Kabuto account, and mints test kUSD.
+
+## AI usage
+
+- **Claude (Anthropic, via Claude Code)** and **OpenAI Codex** helped write and review the contracts, SDK, relay, filler, bot, app, tests and these docs, including the Arkiv integration.
+- **ChatGPT image generation** made the still artwork in `assets/generated/` and **Gemini** animated two of the stills into the landing videos (see those commits).
+- A human ran the live demos, checked every on-chain claim against the devnet explorer and Rabdi, and is responsible for the code and claims.
 
 ## License
 
