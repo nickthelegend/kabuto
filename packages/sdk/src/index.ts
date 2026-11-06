@@ -21,7 +21,7 @@ export type Scheme = 'secp256k1' | 'p256';
 export type QuoteSide = 'buy' | 'sell' | 'zeroForOne' | 'oneForZero';
 export type KabutoSigner = { address: Address; scheme: Scheme; signHash(hash32: Hex): Promise<Hex> };
 export type SignedIntent = { intent: Intent; digest: Hex; signature: Hex; account: Address; owner: Address; scheme: Scheme };
-export type Lifecycle = { status: 'admitted' | 'pending' | 'onchain' | 'cancelled' | 'reverted'; hash: Hex; block?: bigint; index?: number; frames?: unknown; admission?: unknown };
+export type Lifecycle = { status: 'admitted' | 'pending' | 'onchain' | 'cancelled' | 'reverted' | 'replaced' | 'rejected'; hash: Hex; block?: bigint; index?: number; frames?: unknown; admission?: unknown };
 export type FillAttack = 'extra-sender' | 'over-max' | 'no-atomic' | 'underpay';
 export type FrameTx = ReturnType<typeof newTx>;
 export type Tracker = AsyncIterable<Lifecycle> & { hash: Hex; events: (callback?: (event: Lifecycle) => void) => AsyncGenerator<Lifecycle>; wait: () => Promise<Lifecycle> };
@@ -115,6 +115,26 @@ export interface KabutoClient {
   submitFill(tx:FrameTx):Promise<Tracker>;
   /** Watch lifecycle events as an async iterable or callback. */
   track(hash:Hex,callback?:(event:Lifecycle)=>void):Tracker;
+}
+const TERMINAL=new Set<Lifecycle['status']>(['onchain','cancelled','reverted','replaced','rejected']);
+/**
+ * Map a `skandha_explorer_getTransaction` result (or a `skandha_frameTransactionStatus` result) to a lifecycle status.
+ * The mempool drops `entry` once a tx is cancelled or replaced, so the event history and admission outcome decide then:
+ * an `included` event wins (OnChain/Reverted), then `dropped` (Cancelled), then a `replaced` outcome, then `rejected`.
+ */
+export function lifecycleStatus(x:any):Lifecycle['status'] {
+  const entry=x?.entry; const raw=String(entry?.status??(x&&!('entry' in x)?x.status:'')??'').toLowerCase();
+  if(raw==='onchain')return 'onchain'; if(raw==='reverted')return 'reverted'; if(raw==='cancelled')return 'cancelled';
+  const events:any[]=Array.isArray(x?.events)?x.events:[];
+  const included=[...events].reverse().find(e=>e?.kind==='included');
+  if(included)return String(included.status).toLowerCase()==='reverted'?'reverted':'onchain';
+  if(events.some(e=>e?.kind==='dropped'))return 'cancelled';
+  const outcome=String(x?.admission?.outcome??'').toLowerCase();
+  if(outcome==='included')return 'onchain';
+  if(outcome==='dropped')return 'cancelled';
+  if(outcome==='replaced'||events.some(e=>e?.kind==='replaced'))return 'replaced';
+  if(outcome==='rejected')return 'rejected';
+  return 'pending';
 }
 function createKabutoImpl({rpcUrl=devnet1337.gateway,deployment=devnet1337}: {rpcUrl?:string;deployment?:Deployment} = {}): KabutoClient {
   if (deployment.chainId !== 1337) throw new Error('Kabuto SDK supports devnet chain 1337 only');
@@ -213,14 +233,13 @@ function createKabutoImpl({rpcUrl=devnet1337.gateway,deployment=devnet1337}: {rp
       while(Date.now()-started<180_000) {
         let x:any;
         try {x=await rpc('skandha_explorer_getTransaction',[hash]);} catch {x=await rpc('skandha_frameTransactionStatus',[hash]);}
-        const entry=x?.entry??x; const raw=String(entry?.status??x?.status??'Pending').toLowerCase();
-        const status:Lifecycle['status']=raw==='onchain'?'onchain':raw==='cancelled'?'cancelled':raw==='reverted'?'reverted':'pending';
+        const status=lifecycleStatus(x);
         if(status!==last){
           const receipt=status==='onchain'||status==='reverted'?await rpc<any>('eth_getTransactionReceipt',[hash]).catch(()=>null):null;
           const e:Lifecycle={status,hash,admission:x?.admission,block:receipt?.blockNumber?BigInt(receipt.blockNumber):undefined,index:receipt?.transactionIndex?Number(BigInt(receipt.transactionIndex)):undefined,frames:receipt?.frameReceipts??x?.admission?.frameStatuses};
           callback?.(e);cb?.(e);yield e;last=status;
         }
-        if(status==='onchain'||status==='cancelled'||status==='reverted') return;
+        if(TERMINAL.has(status)) return;
         await sleep(1500);
       }
       throw new Error(`Transaction ${hash} was not resolved within 180 s`);

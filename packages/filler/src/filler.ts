@@ -64,7 +64,7 @@ async function processIntent(intentId:string,raw:any) {
     console.log(role,'submitted',tracker.hash,intentId);
     for await(const e of tracker.events()) {
       if(e.status==='onchain'){await report({type:'fill_landed',intentId,hash:e.hash,filler,role,attack:attack||undefined});console.log(role,'landed',e.hash);break;}
-      if(e.status==='cancelled'){
+      if(e.status==='cancelled'||e.status==='replaced'||e.status==='rejected'){
         const used=BigInt(await sdk.publicClient.getTransactionCount({address:signedIntent.account}))>i.nonce;
         await report({type:used?'fill_replaced':'fill_refused',intentId,hash:e.hash,reason:used?undefined:'Cancelled before inclusion',filler,role,attack:attack||undefined});
         console.log(role,used?'replaced':'cancelled',e.hash);break;
