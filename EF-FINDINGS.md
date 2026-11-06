@@ -1,5 +1,7 @@
 # EIP-8141 / ERC-8421 devnet findings (Kabuto, ETHGlobal Mumbai 2026)
 
+Note: the devnet stopped producing blocks at block 408,262 (Nov 5 2026, 22:58:46 UTC); every transaction below predates the halt.
+
 What we verified on the public alt-mempool devnet (chain 1337, gateway `altmempoolgateway.forshtat.com`, ethrex `eip8141-tracer`), with transactions you can open.
 
 ## Verified working
@@ -23,5 +25,5 @@ What we verified on the public alt-mempool devnet (chain 1337, gateway `altmempo
 2. **`skandha_frameTransactionStatus` lags the explorer record.** We saw `New` from `skandha_frameTransactionStatus` while `skandha_explorer_getTransaction` already said `OnChain`. We poll the explorer record first.
 3. **Contract creation costs state gas.** `eth_estimateGas` then ×2 worked every time; a fixed 6M limit sometimes did not (3 KB contract out of gas at 6,000,000).
 4. **The explicit-`msg` path is powerful and under-documented.** The security considerations warn about it correctly; an example validator that constrains every SENDER frame (like `KabutoAccount.verifyIntent`) would show builders the safe way to use it.
-5. **`skandha_explorer_getTransaction` gives three different views of a cancelled transaction.** For `0x2e8b5b7c…2e92` and `0xbc0334ea…ea80` (checked Nov 6), `entry` is `null`, `admission.outcome` is `replaced`, and the `events` array ends in `dropped` / `Cancelled` with the revalidation reason. A client that reads `entry.status` or `admission.outcome` gets no status or the wrong reason; only the last event says what happened. A top-level `status` (and `outcome` set from the final event) would make cancellations easy to report.
+5. **A cancelled transaction's explorer entry shows only its latest fate.** For `0x2e8b5b7c…2e92`, `0xbc0334ea…ea80` and `0x912537da…4818`, `entry` is `null` and `admission.outcome` is `replaced`, because each account later reused the nonce (for `0x912537da` the replacement was intent fill `0xdfd70b01`). The `PriceOutOfBand` cancellation appears only in the `events` array (`dropped` / `Cancelled`, "revalidation failed as of block N"). A client that reads `entry.status` gets nothing, and one that reads `admission.outcome` gets `replaced`. Keeping the first terminal outcome (`Cancelled` + reason) next to the later replacement would make cancellations easy to show to users and judges.
 6. **Reputation with many `Cancelled` txs is untested by us at scale.** A protected swap that is cancelled after admission is exactly what ERC-8421 reputation counts against a staked sender. Guidance on how invalidations by price movement should be scored would help applications like ours.

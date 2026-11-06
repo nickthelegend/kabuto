@@ -4,7 +4,7 @@ Paste-ready answers, one section per ETHGlobal form field. Every number here is 
 
 Before pasting (Nick):
 - [ ] Submit the Uniswap Developer Feedback Form, pasting https://github.com/nickthelegend/kabuto/blob/main/FEEDBACK.md (paste-ready answers at the end of FEEDBACK.md). The Uniswap answer below says it was submitted.
-- [ ] Upload the demo video and paste its link under Links.
+- [ ] **TODO (Nick):** upload the demo video and paste its link under Links.
 - [ ] Pick exactly these three partner prizes: EF Frame Transaction Alternative Mempool, Uniswap Build with Uniswap, Arkiv Build on Arkiv (from scratch).
 
 ## Project name
@@ -20,7 +20,7 @@ A sandwich bot needs your swap to stay valid after it has moved the price. Today
 
 Kabuto is a DEX, an SDK and an open filler network on EIP-8141 frame transactions and Uniswap v4, live on the Ethereum Foundation's frame-transaction devnet (chain 1337, ERC-8421 alternative mempool).
 
-Protection toggle. With protection off, the DEX sends an ordinary swap, and our live sandwich bot front-runs it and back-runs it in the same block (indices 0, 1, 2): it filled 1.80% worse than its quote, 27.04 kUSD on 1,500 kUSD. With protection on, the same swap is a frame transaction whose VERIFY frame reads the v4 pool price with `extsload` and checks it against a band you signed. The bot front-runs again, the alt-mempool re-runs VERIFY, it reverts with `PriceOutOfBand`, and the swap is dropped: status `Cancelled`, no receipt, 0 gas.
+Protection toggle. With protection off, the DEX sends an ordinary swap, and our live sandwich bot front-runs it and back-runs it in the same block (indices 0, 1, 2): it filled 1.80% worse than its quote, 27.04 kUSD on 1,500 kUSD. With protection on, the same swap is a frame transaction whose VERIFY frame reads the v4 pool price with `extsload` and checks it against a band you signed. The bot front-runs again, the alt-mempool re-runs VERIFY, it reverts with `PriceOutOfBand`, and the swap is dropped as `Cancelled`: no receipt, 0 gas. (The explorer entry now reads `replaced` because the account later reused that nonce; the cancellation is in its event history.)
 
 Open intents. Instead of routing, sign a note: at most X in, at least a Dutch-decaying minimum out. No transaction, no gas. Any filler completes it through Uniswap v4 and pays the gas. EIP-8141's security section warns that explicit-message approvals cover every later SENDER frame; Kabuto's `verifyIntent` binds the approval to every frame (one transfer of at most maxIn, filler frames that cannot act as the account, one atomic batch, settlement against the balance read during validation). There is no settlement contract and no auction server. Three tampered fills (extra SENDER frame, over-max pull, missing atomic flag) were refused at admission; an underpaying fill lands, fails settlement and rolls back.
 
@@ -28,9 +28,11 @@ KabutoGuard. A Uniswap v4 `beforeSwap` hook that reads the frame transaction it 
 
 The swap can also pay its own gas: a staked paymaster inspects the frames and sponsors a price-pinned swap that repays it from the output; the account's ETH moved by 0 wei.
 
-On mainnet today, read-only: paste an Ethereum mainnet Uniswap v4 swap on the landing page and Kabuto tells you whether it was sandwiched and whether a ±0.5% pin would have made it invalid.
+On mainnet today, read-only: paste an Ethereum mainnet Uniswap v4 swap on the landing page and Kabuto tells you whether it was sandwiched and whether a ±0.5% pin would have made it invalid (for blocks the public RPCs still serve).
 
 The intent board lives on Arkiv (Rabdi): each verified intent becomes an entity that expires at the intent's deadline, fill outcomes become a 30-day fill log, and the DEX's Intents tab reads the board from Arkiv. Settlement stays on chain 1337.
+
+Honest status: the EF devnet stopped producing blocks at block 408,262 (Nov 5, 22:58:46 UTC). Every live proof we cite predates the halt; while it lasts, new transactions from the app cannot be included.
 
 ## How it's made
 - Contracts (Solidity 0.8.28, Foundry): `KabutoAccount` (verifyPrice, verifyPriceExecution, verifyIntent, settleIntent), `KabutoPaymaster` (frame-inspecting sponsor), `KabutoFiller` (pays gas when its operator co-signs; swaps through v4), `KabutoRouter` (minimal v4 unlock-callback router), `KabutoGuardHook` (frame-aware v4 hook). Frame opcodes (APPROVE, TXPARAM, FRAMEPARAM, FRAMEDATACOPY, SIGPARAM) come from `@forshtat/hegota-support`; pool reads use v4-core `StateLibrary` / `extsload`.
@@ -40,19 +42,19 @@ The intent board lives on Arkiv (Rabdi): each verified intent becomes an entity 
 - A real adversary: a hosted sandwich bot that watches both mempools, front-runs at a higher fee, back-runs behind the victim, and records the realized loss against the no-sandwich quote for every attempt.
 - Filler network: an untrusted relay (intents carry their own signatures) mirrored to Arkiv with `@arkiv-network/sdk`, and a reference filler that quotes on the V4 Quoter and competes by same-nonce replacement; attacker modes demonstrate the refused tampering.
 - DEX (Vite + React): key creation, account deploy, stake and signing all happen in the browser; GSAP ScrollTrigger landing, Motion UI. Hosted on Vercel; relay, filler, bot and a fallback faucet run in Docker on a VPS.
-- Testing: 19 Foundry tests (10 core + 9 KabutoGuard; 2 fuzz tests × 256 runs) with mocked frame opcodes and a real v4 PoolManager; a live devnet e2e suite (last full run: 6 passed, 4 timed out waiting for inclusion during a devnet stall); live app runs against the hosted bot; and the mainnet replay.
+- Testing: 19 Foundry tests (10 core + 9 KabutoGuard; 2 fuzz tests × 256 runs) with mocked frame opcodes and a real v4 PoolManager; a live devnet e2e suite (last full run: 6 passed, 4 failed waiting for inclusion during a devnet stall; two of those were mined later and two were mined later but reverted at the filler's `fill` frame); a fresh Nov 6 rerun of every suite that spends no devnet ETH: 33 passed, 1 failed (a bot test that needs a non-empty alt-mempool dump), 2 skipped; live app runs against the hosted bot; and the mainnet replay.
 - Hacky bit: the helper library marks FRAMEPARAM and FRAMEDATACOPY as not yet exercised on this devnet. We found they work, including from a v4 hook called by the PoolManager inside a SENDER frame, which is what makes KabutoGuard possible. We also fit two VERIFY frames, two signatures and a full frame-shape check under the 100k validation-gas cap (78,500 gas left for `verifyIntent` with a P256 owner).
 
 ## Partner prizes (max 3)
 
 ### Ethereum Foundation: Best Use of the Frame Transaction Alternative Mempool
-Kabuto needs the alt mempool's core capability: a staked account's VERIFY frame reads another contract's storage (the Uniswap v4 PoolManager's `slot0`), which the canonical mempool forbids. The headline behaviour, a swap admitted and then dropped as `Cancelled` when a front-run moves the price, is the alt mempool's revalidation at work. We also use explicit-`msg` signatures with every frame constrained, as the EIP's security section asks, a frame-inspecting paymaster, P256 keys and same-nonce replacement. Proofs: admitted and mined `0x45345cfa…e08a`, cancelled after a front-run `0x2e8b5b7c…2e92`, intent fill `0xdfd70b01…c065`. Devnet findings, including a gateway that lost its gossip peer and an explorer field that disagrees with its own event log: EF-FINDINGS.md.
+Kabuto needs the alt mempool's core capability: a staked account's VERIFY frame reads another contract's storage (the Uniswap v4 PoolManager's `slot0`), which the canonical mempool forbids. The headline behaviour, a swap admitted and then dropped as `Cancelled` when a front-run moves the price, is the alt mempool's revalidation at work. We also use explicit-`msg` signatures with every frame constrained, as the EIP's security section asks, a frame-inspecting paymaster, P256 keys and same-nonce replacement. Proofs: admitted and mined `0x45345cfa…e08a`, cancelled after a front-run `0x2e8b5b7c…2e92` (event history `dropped: Cancelled`, `PriceOutOfBand`), P256 intent fill `0xdfd70b01…c065`, whose validation prefix sums to exactly the 100,000 cap. Devnet findings, including a gateway that lost its gossip peer and cancellations visible only in the explorer's event history: EF-FINDINGS.md.
 
 ### Uniswap Foundation: Build with Uniswap
 Kabuto reads the v4 PoolManager's price with `StateLibrary.getSlot0` / `extsload` during transaction validation, settles swaps through v4 flash accounting (`unlock`, `swap`, `sync`/`settle`/`take`) in its own router and filler, quotes on the V4 Quoter, and adds KabutoGuard, a `beforeSwap` hook that only lets price-pinned frame transactions trade. The README's "Uniswap v4 code pointers" table links each of these to its line. FEEDBACK.md is in the repo root and is linked from our Uniswap Developer Feedback Form submission.
 
 ### Arkiv: Build on Arkiv (from scratch)
-Open intents need a public board that any filler can query and that cleans itself up. Each verified intent is a `kabuto.intent.v1` entity with indexed status, tokens, chain and deadline, expiring at the intent's own deadline; each fill outcome is a `kabuto.fill.v1` entity kept for 30 days. The DEX's Intents tab reads the board from Rabdi, and fillers can poll Arkiv instead of the relay. Writer: `0x8eD225Ae7f4b445Bfee6ad5dd9719C59426Af3aF`. Judge query and the required files (schema, friction, reach, why-arkiv, how-you-use-arkiv) are in the README's "Arkiv intent board" section and `arkiv/`.
+Open intents need a public board that any filler can query and that cleans itself up. Each verified intent is a `kabuto.intent.v1` entity with indexed status, tokens, chain and deadline, expiring at the intent's own deadline; each fill outcome is a `kabuto.fill.v1` entity kept for 30 days. The DEX's Intents tab reads the board from Rabdi, and fillers can poll Arkiv instead of the relay. Writer: `0x8eD225Ae7f4b445Bfee6ad5dd9719C59426Af3aF`. Live on Rabdi: fill entity `0xd9cc8020…4e5f` (outcome `landed`, devnet tx `0xd498630c…752b`); the intent entity it points to, `0xd309c13a…20d0`, has expired at its deadline, as designed. Judge query and the required files (schema, friction, reach, why-arkiv, how-you-use-arkiv) are in the README's "Arkiv intent board" section and `arkiv/`.
 
 ## AI usage
 Claude (Anthropic, via Claude Code) and OpenAI Codex helped write and review the contracts, SDK, relay, filler, bot, app, tests and docs. ChatGPT image generation made the still artwork, and Gemini animated two stills into the landing videos. The live app runs were recorded with Playwright scripts (`packages/demo`) against the deployed app, and every on-chain claim was checked against the devnet explorer and Rabdi. The team is responsible for all code and claims.
@@ -60,4 +62,4 @@ Claude (Anthropic, via Claude Code) and OpenAI Codex helped write and review the
 ## Links
 - Repo: https://github.com/nickthelegend/kabuto
 - Live app: https://kabuto-self.vercel.app
-- Demo video: upload the final render from `film/`, then paste the link here
+- Demo video: **TODO (Nick): upload the final render (it exists only in the local main checkout, `film/renders/`, which is not tracked), then paste the link here**

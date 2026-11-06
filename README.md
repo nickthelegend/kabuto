@@ -7,6 +7,8 @@
 ![Kabuto landing](docs/img/landing-hero.png)
 
 > **Scope, stated up front.** EIP-8141 (frame transactions) is not on Ethereum mainnet or Sepolia; it is proposed for the Hegotá upgrade. Kabuto runs on the EF's public frame-transaction devnet, where Uniswap v4's PoolManager, V4 Quoter and StateView are predeployed. The mainnet numbers below come from a read-only replay of real mainnet blocks, and the mainnet checker only reads; Kabuto sends no mainnet transactions.
+>
+> **Devnet status.** The EF devnet stopped producing blocks at **block 408,262 (Nov 5 2026, 22:58:46 UTC)** and was still halted at 04:35 UTC on Nov 6 ([TESTING.md](TESTING.md)). Every live proof in this README predates the halt. While it lasts, the app loads but its transactions cannot be included; the linked transactions and explorer records stay readable.
 
 ---
 
@@ -17,7 +19,7 @@
 | # | What you'll see | Transaction |
 |---|---|---|
 | 1 | **The problem, live.** An ordinary 1,500 kUSD swap with 2% slippage is sandwiched by our bot: front-run, victim, back-run at indices 0, 1, 2 of block 407,046. The victim got 0.04543 WETH against a 0.04626 quote (1.80% worse, 27.04 kUSD). | victim [`0xbf074d56…de29`](https://explorer.altmempool.wtf/tx/0xbf074d561e3ed81a19eb3c4eea24efa7e6d8ec48511543fd318682d72afbde29) |
-| 2 | **The fix, live.** The same swap with protection on (±0.5% pin). The same bot front-ran it in block 407,052; the alt-mempool re-ran the VERIFY frame, it reverted with `PriceOutOfBand` (`0x8ad5a9c0`), and the swap was dropped: status `Cancelled`, no receipt, 0 gas. | [`0x2e8b5b7c…2e92`](https://explorer.altmempool.wtf/tx/0x2e8b5b7ca0801c1ba0931593d33f099a19a0189ed057d775b74b9d88cf7b2e92) |
+| 2 | **The fix, live.** The same swap with protection on (±0.5% pin). The same bot front-ran it in block 407,052; the alt-mempool re-ran the VERIFY frame, it reverted with `PriceOutOfBand` (`0x8ad5a9c0`), and the swap was dropped (`Cancelled`): no receipt, 0 gas. The explorer entry now reads `replaced`, because the account later reused that nonce; the cancellation is in its event history (`dropped: Cancelled`, "revalidation failed as of block 407052"). | [`0x2e8b5b7c…2e92`](https://explorer.altmempool.wtf/tx/0x2e8b5b7ca0801c1ba0931593d33f099a19a0189ed057d775b74b9d88cf7b2e92) |
 | 3 | **A pool that can't be sandwiched.** In the KabutoGuard v4 pool, a price-pinned frame transaction swaps; a plain legacy transaction (what a sandwich bot sends) through the same router reverts with `NotFrameTx()` (`0x2e55cc19`). | pinned [`0xd1962486…f861`](https://explorer.altmempool.wtf/tx/0xd1962486165f1c4afdf3aec80ad6f2c6f882063403ad81e8469165e68472f861) · plain [`0x8fd351e2…1829`](https://explorer.altmempool.wtf/tx/0x8fd351e2cffefc53e3680916bdb4007f24cbbc9b601ae37b13a80287e3291829) |
 
 Also live: an intent filled by a third-party filler that paid the gas ([`0xdfd70b01…c065`](https://explorer.altmempool.wtf/tx/0xdfd70b014486b1d92669271318502d159570de709be0dbb2a99682da49b8c065)), its Arkiv fill record ([`0xd9cc8020…4e5f`](https://rabdi.explorer.arkiv.network/entity/0xd9cc8020d93d9bdae3052f914a1770613cc2c4958edaf72cf0621cca76fd4e5f)), and a "Were you sandwiched?" checker on the landing page that reads real Ethereum mainnet.
@@ -62,7 +64,8 @@ Full backend (relay, filler, bot, faucet): `docker compose up -d --build`, or se
 ### Limits (full list in [Known limits](#known-limits-honest-list))
 
 - Devnet only: EIP-8141 is not on any public network yet. kUSD is a devnet test token; the WETH/kUSD pool is thin and its price has drifted away from real ETH.
-- Of the live e2e suite's last full run, 6 cases passed and 4 timed out waiting for inclusion while the public devnet stalled ([TESTING.md](TESTING.md)).
+- The EF devnet has been halted since block 408,262 (Nov 5, 22:58:46 UTC); all live proofs predate it, and no live e2e run was possible after it.
+- Fresh rerun of every suite that spends no devnet ETH (Nov 6): 33 passed, 1 failed (a bot test that needs a non-empty alt-mempool dump), 2 skipped ([TESTING.md](TESTING.md)).
 - How ERC-8421 reputation should score swaps that are cancelled by price movement is an open question ([EF-FINDINGS.md](EF-FINDINGS.md)).
 
 ---
@@ -91,7 +94,7 @@ Full backend (relay, filler, bot, faucet): `docker compose up -d --build`, or se
 | Mode | What happened on chain | Tx |
 |---|---|---|
 | **Protection off** (ordinary wallet, 2% slippage) | Bot front-run, victim and back-run at **indices 0, 1, 2 of block 407,046**. The victim received 0.04543 WETH against a 0.04626 WETH quote: **1.80% worse, 27.04 kUSD lost.** | victim [`0xbf074d56…de29`](https://explorer.altmempool.wtf/tx/0xbf074d561e3ed81a19eb3c4eea24efa7e6d8ec48511543fd318682d72afbde29), front [`0xa33875b5…4e18`](https://explorer.altmempool.wtf/tx/0xa33875b5dcd12802e25c92150f8b87284b766f945e49a5ca589a6a6975784e18), back [`0xba51ab55…b3d2`](https://explorer.altmempool.wtf/tx/0xba51ab5570bcd69b298bd7efad26002dc3b23c591bcdfdf3bc0b616699b8b3d2) |
-| **Protection on** (Kabuto account, ±0.5% pin) | The same bot front-ran it (block 407,052, index 0). The front-run pushed the price out of the pinned band, so the alt-mempool's revalidation of the VERIFY frame failed (`PriceOutOfBand`): **dropped with status `Cancelled`, no receipt, 0 gas.** The bot was left holding its front-run. | victim [`0x2e8b5b7c…2e92`](https://explorer.altmempool.wtf/tx/0x2e8b5b7ca0801c1ba0931593d33f099a19a0189ed057d775b74b9d88cf7b2e92), front [`0xd368dd0c…bc3c`](https://explorer.altmempool.wtf/tx/0xd368dd0c3dae6f660d415967e1d6d19004a85400c32f4c3d52f034c62dbfbc3c) |
+| **Protection on** (Kabuto account, ±0.5% pin) | The same bot front-ran it (block 407,052, index 0). The front-run pushed the price out of the pinned band, so the alt-mempool's revalidation of the VERIFY frame failed (`PriceOutOfBand`): **dropped (`Cancelled`), no receipt, 0 gas.** The bot was left holding its front-run. (The explorer entry now reads `replaced` because the nonce was reused later; the `Cancelled` drop is in its event history.) | victim [`0x2e8b5b7c…2e92`](https://explorer.altmempool.wtf/tx/0x2e8b5b7ca0801c1ba0931593d33f099a19a0189ed057d775b74b9d88cf7b2e92), front [`0xd368dd0c…bc3c`](https://explorer.altmempool.wtf/tx/0xd368dd0c3dae6f660d415967e1d6d19004a85400c32f4c3d52f034c62dbfbc3c) |
 | **Intent** (300 kUSD → WETH) | Signed off-chain (0 gas), posted to the open relay. A third-party filler built the frame transaction, routed it through Uniswap v4 and paid the gas. The account received 0.00886 WETH (signed minimum 0.00885). | [`0xdfd70b01…c065`](https://explorer.altmempool.wtf/tx/0xdfd70b014486b1d92669271318502d159570de709be0dbb2a99682da49b8c065) |
 
 The "You saved" figure is computed from the swaps themselves (`kUSD paid × shortfall vs quote`), and only shown when the protected swap has the same size and direction as the sandwiched one.
@@ -213,7 +216,7 @@ sequenceDiagram
 
 ### KabutoGuard: a Uniswap v4 pool that cannot be sandwiched (`KabutoGuardHook`)
 
-A v4 hook whose `beforeSwap` reads **the transaction it is running in**. Inside an EIP-8141 transaction, a contract called from a SENDER frame (here a hook, called by the PoolManager during `unlock`) can read `TXPARAM`, `FRAMEPARAM` and `FRAMEDATACOPY`. The hook requires an **earlier, successful VERIFY frame by the sender that pinned this pool's price**, with a band no wider than 2%. Otherwise it reverts:
+A v4 hook whose `beforeSwap` reads **the transaction it is running in**. Inside an EIP-8141 transaction, a contract called from a SENDER frame (here a hook, called by the PoolManager during `unlock`) can read `TXPARAM`, `FRAMEPARAM` and `FRAMEDATACOPY`. The hook requires an **earlier, successful VERIFY frame by the sender that pinned this pool's price**, with a band no wider than `MAX_BAND_BPS`. That limit is an immutable constructor argument ([KabutoGuardHook.sol:32](packages/contracts/src/KabutoGuardHook.sol#L32)); the deployed hook was constructed with 200 bps, i.e. 2% ([`packages/devnet/src/guard.ts:77`](packages/devnet/src/guard.ts#L77)). Otherwise it reverts:
 
 - a plain (legacy / 1559) transaction, which is what a sandwich bot sends → `NotFrameTx()`
 - no pin, a pin for another pool, a later or failed VERIFY frame, or a pin on another account → `NoPricePin()`
@@ -264,7 +267,7 @@ The paymaster's VERIFY frame inspects the transaction with `TXPARAM`, `FRAMEPARA
 | Claim | Enforced in | Tested in | On chain |
 |---|---|---|---|
 | A protected swap is only valid inside its signed price band | `KabutoAccount.verifyPrice` ([KabutoAccount.sol:71](packages/contracts/src/KabutoAccount.sol#L71)), slot0 read at [:179](packages/contracts/src/KabutoAccount.sol#L179) | `packages/contracts/test/Kabuto.t.sol` (price bounds) | [`0x45345cfa…e08a`](https://explorer.altmempool.wtf/tx/0x45345cfa137774ca97c8a1b8e3d58f51b19940a4db3ef765ea9680f135a1e08a) mined in band |
-| A front-run makes it invalid: never included, 0 gas | the VERIFY revert above + EIP-8141 validity rules | live: `packages/e2e` bot-first race | [`0xbc0334ea…ea80`](https://explorer.altmempool.wtf/tx/0xbc0334ead2575f8a6c6c54d06292da3c71dd5bfb6a20c5097fcfd29c0fe2ea80), [`0x2e8b5b7c…2e92`](https://explorer.altmempool.wtf/tx/0x2e8b5b7ca0801c1ba0931593d33f099a19a0189ed057d775b74b9d88cf7b2e92) `Cancelled` |
+| A front-run makes it invalid: never included, 0 gas | the VERIFY revert above + EIP-8141 validity rules | live: `packages/e2e` bot-first race | [`0xbc0334ea…ea80`](https://explorer.altmempool.wtf/tx/0xbc0334ead2575f8a6c6c54d06292da3c71dd5bfb6a20c5097fcfd29c0fe2ea80), [`0x2e8b5b7c…2e92`](https://explorer.altmempool.wtf/tx/0x2e8b5b7ca0801c1ba0931593d33f099a19a0189ed057d775b74b9d88cf7b2e92): no receipt; event history `dropped: Cancelled` (`PriceOutOfBand`), entry later `replaced` by a same-nonce tx |
 | The same bot really sandwiches an ordinary swap | — (that's the problem) | `packages/bot` measures quote vs realized output | [`0xbf074d56…de29`](https://explorer.altmempool.wtf/tx/0xbf074d561e3ed81a19eb3c4eea24efa7e6d8ec48511543fd318682d72afbde29) indices 0/1/2, −1.80% |
 | An intent fill can't take more than `maxIn` | [KabutoAccount.sol:118-120](packages/contracts/src/KabutoAccount.sol#L118) `BadIntentShape(6)` | Foundry + live attack `over-max` | refused at admission (no hash, no gas) |
 | Filler frames can't act as the account | [:126](packages/contracts/src/KabutoAccount.sol#L126) `BadIntentShape(9)` | Foundry + live attack `extra-sender` | refused at admission |
@@ -274,7 +277,7 @@ The paymaster's VERIFY frame inspects the transaction with `TXPARAM`, `FRAMEPARA
 | A swap can pay its own gas | `KabutoPaymaster.sponsor` ([KabutoPaymaster.sol:80](packages/contracts/src/KabutoPaymaster.sol#L80)) | Foundry paymaster codes 1–13 | [`0x7559cff5…7cde`](https://explorer.altmempool.wtf/tx/0x7559cff5fa0398cc452800c66261f03c90bf9925164f5e4c51628c4eef707cde) account ETH moved 0 wei |
 | A v4 pool where plain transactions cannot swap and every swap is price-pinned | `KabutoGuardHook.beforeSwap` ([KabutoGuardHook.sol](packages/contracts/src/KabutoGuardHook.sol)) | `packages/contracts/test/KabutoGuard.t.sol` (9 tests) | pinned swap [`0xd1962486…`](https://explorer.altmempool.wtf/tx/0xd1962486165f1c4afdf3aec80ad6f2c6f882063403ad81e8469165e68472f861) OnChain; legacy swap [`0x8fd351e2…`](https://explorer.altmempool.wtf/tx/0x8fd351e2cffefc53e3680916bdb4007f24cbbc9b601ae37b13a80287e3291829) reverted `NotFrameTx()` |
 | Owner keys use the native P256 scheme | `sigparam(0, RESOLVED_SIGNER) == owner` | live P256 case | [`0xfe705666…b7d3`](https://explorer.altmempool.wtf/tx/0xfe70566620a7e2798002ea376b598d7a6614fee279c861b2cc6146978178b7d3) |
-| All of this fits the 100k validation-gas cap | `MAX_VERIFY_GAS` + per-signature cost (secp256k1 2,800, P256 6,700) in [packages/sdk/src/index.ts:45](packages/sdk/src/index.ts#L45) | the live P256 intent fill | [`0xefebea6a…cce3`](https://explorer.altmempool.wtf/tx/0xefebea6a0a5c7b3e75229c5a9980ee823cd1273945e036a897d12f00fb38cce3) |
+| All of this fits the 100k validation-gas cap | `MAX_VERIFY_GAS` + per-signature cost (secp256k1 2,800, P256 6,700) in [packages/sdk/src/index.ts:45](packages/sdk/src/index.ts#L45) | the live P256 intent fill: VERIFY limits 78,500 + 12,000 plus 6,700 (P256) + 2,800 (secp256k1) = exactly 100,000 | [`0xdfd70b01…c065`](https://explorer.altmempool.wtf/tx/0xdfd70b014486b1d92669271318502d159570de709be0dbb2a99682da49b8c065) |
 
 More rows (bot-first race, paymaster, P256, every hash from the e2e suite) are in [TESTING.md](TESTING.md). What we learned about the devnet is in [EF-FINDINGS.md](EF-FINDINGS.md); what we hit with Uniswap v4 is in [FEEDBACK.md](FEEDBACK.md).
 
@@ -282,7 +285,7 @@ More rows (bot-first race, paymaster, P256, every hash from the e2e suite) are i
 
 ## Were you sandwiched? Check any mainnet swap (live today)
 
-The landing page has a checker that runs on **real Ethereum mainnet**, in your browser: paste a Uniswap v4 swap's transaction hash and Kabuto reads that block's PoolManager `Swap` logs from public RPCs, applies the same front/victim/back rules as the replay below, and says whether you were sandwiched, by whom, how far the bot moved the price first, and whether a ±0.5% Kabuto pin would have made your swap invalid. Source: [packages/app/src/lib/mainnet.ts](packages/app/src/lib/mainnet.ts). It reproduces the replay's results exactly (same front-run, back-run and price move for the example victims).
+The landing page has a checker that runs on **real Ethereum mainnet**, in your browser: paste a Uniswap v4 swap's transaction hash and Kabuto reads that block's PoolManager `Swap` logs from public RPCs, applies the same front/victim/back rules as the replay below, and says whether you were sandwiched, by whom, how far the bot moved the price first, and whether a ±0.5% Kabuto pin would have made your swap invalid. Source: [packages/app/src/lib/mainnet.ts](packages/app/src/lib/mainnet.ts). For its three built-in examples it reproduces the replay's results exactly (same front-run, back-run and price move). **Limit:** it depends on what public RPCs still serve; for older blocks the first RPC can return an empty receipt, which the checker currently reports as "not found" instead of trying the next RPC (see [docs/AUDIT.md](docs/AUDIT.md), R36).
 
 ![The mainnet checker on a real sandwiched swap](docs/img/mainnet-checker.png)
 
@@ -316,8 +319,9 @@ Full API: [packages/sdk/README.md](packages/sdk/README.md).
 
 | Suite | Result |
 |---|---|
+| Fresh rerun, Nov 6 (everything that spends no devnet ETH) | **33 passed, 1 failed, 2 skipped**: Foundry 19, replay 2, SDK reads 2, SDK deployment checks 6, Arkiv 2 (+1 skipped), bot read-only 2 (+1 failed: the read-only bundler dump returned an empty mempool; +1 not run) |
 | Foundry (`forge test --root packages/contracts`) | 19 tests, 0 failed (10 core + 9 KabutoGuard), 2 fuzz tests × 256 runs. Frame opcodes mocked at the `HegotaSupport` helper addresses; swaps against the real v4 PoolManager bytecode. Found two shape-check gaps, both fixed with regression tests and the paymaster redeployed. |
-| Live devnet e2e (`pnpm --dir packages/e2e test`) | Protected swap, bot-first race, out-of-band and three tampered fills refused, run against the public devnet. Some cases were admitted but timed out waiting for inclusion while the public devnet stalled (every hash and outcome in TESTING.md). |
+| Live devnet e2e (`pnpm --dir packages/e2e test`) | Last full run (Nov 5): 6 cases passed, 4 failed waiting for inclusion during a devnet stall. Of those, the P256 retry and the soak stake were mined later; the intent-fill and underpay retries were mined later but reverted at the filler's `fill` frame, with the filler paying the gas. Every hash in TESTING.md. No live run since: the devnet has been halted since block 408,262. |
 | Live app runs (this README's top table) | Ordinary swap sandwiched; protected swap cancelled at 0 gas; intent filled by a VPS filler. |
 | Arkiv (`pnpm --dir packages/filler exec vitest run test/arkiv.test.ts`) | 2 passed (byte round trip, live public Rabdi read), 1 skipped (live write; needs a funded writer key in the environment) |
 | Live sandwich bot (`packages/bot`) | Watches the public mempool and the alt-mempool, front-runs and back-runs real swaps, and records the realized loss vs the no-sandwich quote for every attempt. |
@@ -331,8 +335,8 @@ Open intents need a public place where any filler can find them. Kabuto's relay 
 | | |
 |---|---|
 | Writer address (owns every Kabuto entity) | [`0x8eD225Ae7f4b445Bfee6ad5dd9719C59426Af3aF`](https://rabdi.explorer.arkiv.network/address/0x8eD225Ae7f4b445Bfee6ad5dd9719C59426Af3aF) |
-| Intent entity (300 kUSD → WETH, `kabuto.intent.v1`) | [`0xd309c13a…20d0`](https://rabdi.explorer.arkiv.network/entity/0xd309c13a29b10ff87b4ecfd62721f168397ea25930a0a2e5dc8f0f910be420d0), published ~4 s after posting, status patched `open` → `filled` |
-| Fill entity (`kabuto.fill.v1`, outcome `landed`) | [`0xd9cc8020…4e5f`](https://rabdi.explorer.arkiv.network/entity/0xd9cc8020d93d9bdae3052f914a1770613cc2c4958edaf72cf0621cca76fd4e5f), linking the intent key to devnet fill [`0xd498630c…752b`](https://explorer.altmempool.wtf/tx/0xd498630c236fa7132b41011414430d0765d86b7ab4db62fc360901fc04f5752b) |
+| Intent entity (300 kUSD → WETH, `kabuto.intent.v1`) | [`0xd309c13a…20d0`](https://rabdi.explorer.arkiv.network/entity/0xd309c13a29b10ff87b4ecfd62721f168397ea25930a0a2e5dc8f0f910be420d0), published ~4 s after posting, status patched `open` → `filled`. **Expired at its deadline, as designed**: `getEntity` now reports "No live entity", so the explorer link no longer resolves. Its key lives on in the fill entity below |
+| Fill entity (`kabuto.fill.v1`, outcome `landed`, **live**, expires at Rabdi block 1,561,290) | [`0xd9cc8020…4e5f`](https://rabdi.explorer.arkiv.network/entity/0xd9cc8020d93d9bdae3052f914a1770613cc2c4958edaf72cf0621cca76fd4e5f), linking the intent key to devnet fill [`0xd498630c…752b`](https://explorer.altmempool.wtf/tx/0xd498630c236fa7132b41011414430d0765d86b7ab4db62fc360901fc04f5752b) |
 
 A landed fill is written only after the devnet explorer confirms the transaction on chain (fill reports arrive on an open endpoint). `GET https://kabuto-relay.201-18-198-162.sslip.io/arkiv` shows the writer, its tGLM balance, the publication count and the last error.
 
@@ -381,7 +385,8 @@ Uniswap v4 PoolManager `0x6bF9Aa9c04fd001385742d61f6818C3236429848`, Quoter `0xe
 - Devnet only, because EIP-8141 is not on any public network yet. kUSD is a devnet test token; USDC on the devnet is not mintable by us.
 - The WETH/kUSD pool is thin and our demo runs keep buying WETH, so its price has drifted well above real ETH. The sandwich arithmetic is unaffected.
 - The bot can miss: if a victim lands in the very next block, before the bot sees it in the mempool, it front-runs too late. Its viewer prints "did not form a sandwich" in that case, rather than a loss.
-- One protected swap (`0x912537da…4818`) was recorded by the alt-mempool as `replaced` (a same-nonce replacement), not `Cancelled`. It also never executed and paid 0 gas, but the app's "Sandwich blocked" label is broader than the exact reason in that case.
+- Cancelled protected swaps (`0x2e8b5b7c…2e92`, `0xbc0334ea…ea80`, `0x912537da…4818`) show `replaced` on the explorer today: each was first dropped as `Cancelled` (`PriceOutOfBand` on revalidation), and the account's nonce was reused afterwards. The cancellation is in each entry's event history.
+- The EF devnet has been halted since block 408,262 (Nov 5, 22:58:46 UTC); see the Devnet status note at the top.
 - ERC-8421 counts admitted-but-not-included transactions against a staked sender's reputation. How price-invalidated swaps should be scored is an open question, documented in [EF-FINDINGS.md](EF-FINDINGS.md).
 - Browser keys are devnet-only and live in localStorage.
 

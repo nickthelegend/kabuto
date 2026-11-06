@@ -8,12 +8,12 @@ Every number below is in the README, TESTING.md or a linked transaction. If a ju
 |---|---|---|
 | 0:00–0:20 | Landing hero | "When you swap on a DEX, a bot can see your swap, buy first, and sell back to you at a worse price. That's a sandwich. It works because your swap is still a valid transaction after the bot moved the price. On Uniswap v4 mainnet, in 27 hours, we counted 497 victim swaps." |
 | 0:20–0:45 | DEX, protection **off**, 1,500 kUSD; then the bot terminal | "Here's an ordinary swap with 2% slippage. Our real sandwich bot front-runs it and back-runs it in the same block: positions 0, 1 and 2. I got 1.8% less than my quote: 27 kUSD gone." |
-| 0:45–1:10 | Protection **on**; the result card shows "Sandwich blocked · Not included · 0 gas" and "You saved"; open the explorer: `Cancelled` | "Same swap, protection on. Kabuto puts the price check inside the transaction's own EIP-8141 VERIFY frame. The bot front-runs again, the mempool re-checks my transaction, the price is out of my band, and my swap simply stops existing. Not reverted: never included. I pay zero gas, and the bot is left holding its own trade." |
+| 0:45–1:10 | Protection **on**; the result card shows "Sandwich blocked · Not included · 0 gas" and "You saved"; on the explorer, the event history shows `dropped: Cancelled` | "Same swap, protection on. Kabuto puts the price check inside the transaction's own EIP-8141 VERIFY frame. The bot front-runs again, the mempool re-checks my transaction, the price is out of my band, and my swap simply stops existing. Not reverted: never included. I pay zero gas, and the bot is left holding its own trade." |
 | 1:10–1:35 | Intents tab: sign, filler fills, Arkiv board row | "Or don't route at all. I sign one intent, no gas: at most this much in, at least this much out. Anyone can fill it through Uniswap v4 and pay the gas. My account checks every frame of the fill, so the tampered fills we tried were refused before reaching a block. The board of open intents lives on Arkiv and expires with each intent." |
 | 1:35–1:50 | Landing proof list: KabutoGuard rows | "And for Uniswap: KabutoGuard, a v4 hook that reads the transaction it runs in. In this pool, only price-pinned frame transactions can swap. A bot's plain transaction reverts." |
 | 1:50–2:00 | Logo, repo URL | "Live on the EF frame-transaction devnet with Uniswap v4. Every claim is a transaction you can open. Kabuto: swaps that only happen at your price." |
 
-Fallback if the devnet stalls on stage: open the three proof transactions from the README's "Three live proofs" table and say "this is the run from this morning", never present an old run as live.
+The EF devnet has been halted since block 408,262 (Nov 5, 22:58:46 UTC). Check `eth_blockNumber` before going on stage. If it is still halted, say so in one sentence ("the EF devnet stopped producing blocks overnight, so this is the recorded run"), play the film or open the three proof transactions from the README, and never present a recorded run as live.
 
 ## Numbers you can quote (and their source)
 
@@ -22,10 +22,10 @@ Fallback if the devnet stalls on stage: open the three proof transactions from t
 | 497 victim transactions, 503 same-sender triples, 27 hours, blocks 26,299,825–26,307,824 | README "How big the problem is"; `packages/replay` |
 | 388 of 501 evaluated (77%) moved the price more than 0.5% | same |
 | 1.80% worse, 27.04 kUSD lost on 1,500 kUSD; indices 0, 1, 2 of block 407,046 | tx `0xbf074d56…de29` |
-| Protected swap dropped as `Cancelled` at block 407,052, 0 gas | tx `0x2e8b5b7c…2e92` |
+| Protected swap dropped as `Cancelled` at block 407,052, 0 gas (entry now reads `replaced`: nonce reused later) | tx `0x2e8b5b7c…2e92` event history |
 | Intent filled by a third party: 0.00886 WETH, signed minimum 0.00885 | tx `0xdfd70b01…c065` |
 | 19 Foundry tests (10 core + 9 KabutoGuard), 2 fuzz tests × 256 runs | TESTING.md |
-| Validation-gas cap 100k; 78,500 left for `verifyIntent` with a P256 owner | `packages/sdk/src/index.ts:45-51` |
+| Validation-gas cap 100k; 78,500 left for `verifyIntent` with a P256 owner (the P256 fill `0xdfd70b01` sums to exactly 100,000) | `packages/sdk/src/index.ts:45-51` |
 
 Don't quote a dollar figure for mainnet: USD pricing covered about 1% of candidates.
 
@@ -49,4 +49,4 @@ Don't quote a dollar figure for mainnet: USD pricing covered about 1% of candida
 
 **What's the ±0.5% based on?** It's the user's band, adjustable in the UI. In the replay, 77% of the evaluated same-sender sandwiches moved the price more than 0.5%.
 
-**Did your e2e suite pass?** Its last full run: 6 cases passed, 4 timed out waiting for inclusion while the public devnet stalled. Every hash is in TESTING.md; the live app runs since then are in the README.
+**Did your tests pass?** Foundry 19/19. Fresh Nov 6 rerun of everything that spends no devnet ETH: 33 passed, 1 failed (a bot test that needs a non-empty alt-mempool dump), 2 skipped. The last full live e2e run (Nov 5): 6 passed, 4 failed waiting for inclusion during a devnet stall; two of those were mined later, two were mined later but reverted at the filler's frame. Every hash is in TESTING.md.
